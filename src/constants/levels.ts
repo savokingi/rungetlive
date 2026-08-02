@@ -19,8 +19,8 @@ export const LEVELS: LevelRequirement[] = [
   { level: 16, daysRequired: 270, xpRequired: 2250 },
   { level: 17, daysRequired: 300, xpRequired: 2500 },
   { level: 18, daysRequired: 330, xpRequired: 2800 },
-  { level: 19, daysRequired: 365, xpRequired: 3100 },
-  { level: 20, daysRequired: 730, xpRequired: 12000 },
+  { level: 19, daysRequired: 365, xpRequired: 3200 },
+  { level: 20, daysRequired: 420, xpRequired: 4500 },
 ]
 
 export function getNextLevel(currentLevel: number): LevelRequirement | undefined {
