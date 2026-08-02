@@ -84,57 +84,196 @@ const animStyles = `
 function CharacterAdamCore(props: CharacterSVGProps & { tier: number }) {
   const { tier, ...rest } = props
   const t = Math.max(1, Math.min(10, tier))
-  const bodyScale = 0.9 + t * 0.05
-  const glowW = Math.max(18, 44 * bodyScale)
-  const glowX = (120 - glowW) / 2
-  const slump = t < 3 ? 3 : t < 5 ? 1.5 : 0
+  const t1 = (t - 1) / 9
+  const lerp = (a: number, b: number) => a + (b - a) * t1
+  const {
+    size: sz = 120, accent = 'var(--color-accent)', accentLight = 'var(--color-accent-light)',
+    accentBorder = 'var(--color-accent-border)', animated,
+  } = rest
+
+  const L = 60
+  const r = (v: number) => Math.round(v * 10) / 10
+  const X = (dx: number) => `${r(L + dx)}`
+
+  // Progression metrics (tier 1 -> 10): shoulders widen, neck thickens,
+  // torso fills out, arms thicken, muscle detail increases, posture straightens.
+  const shoulder = lerp(13.5, 24)
+  const chest = lerp(9.5, 14.5)
+  const waistH = lerp(7.6, 9.4)
+  const hipH = lerp(8.2, 10)
+  const neckH = lerp(3.4, 4.6)
+  const armU = lerp(2.7, 3.9)
+  const armF = lerp(1.8, 2.5)
+  const deltR = lerp(3.1, 4.6)
+  const mus = lerp(0, 0.9)
+  const slump = lerp(7, 0)
   const aura = t < 3 ? 0 : (t - 2) * 0.012
   const halo = t >= 2
   const crown = t >= 9
   const sparkle = t >= 7
-  const jaw = t >= 6
-  const { size: sz = 120, accent = 'var(--color-accent)', accentLight = 'var(--color-accent-light)', accentBorder = 'var(--color-accent-border)', animated } = rest
+  const definedJaw = t >= 6
+
+  // Realistic-style palette
+  const SK_L = '#f3cba2'
+  const SK_D = '#e1a575'
+  const SHAD = '#c78a5b'
+  const HAIR = '#2c241d'
+  const SHORT = '#33383f'
+  const SHOE = '#20222a'
+  const INK = '#1b150e'
+
+  const dxsL = [-3, -7, -(shoulder - 1), -(shoulder - 1), -chest, -chest, -(waistH + 1), -waistH, -waistH, 0]
+  const dysT = [33, 38, 41, 44, 49, 54, 60, 64, 68, 70]
+  const torsoLeft = dxsL.map((dx, i) => `${X(dx)} ${dysT[i]}`).join(' L ')
+  const dxR = dxsL.slice().reverse()
+  const dyR = dysT.slice().reverse()
+  const torsoRight = dxR.map((dx, i) => `${X(-dx)} ${dyR[i]}`).join(' L ')
+  const torsoPath = `M ${torsoLeft} L ${torsoRight} Z`
+
+  const grad = `adamSkin_${tier}_${sz}`
+
   return (
     <svg width={sz} height={sz} viewBox="0 0 120 120" fill="none">
       {animated && <style>{animStyles}</style>}
+      <defs>
+        <linearGradient id={grad} x1="0" y1="0" x2="0.2" y2="1">
+          <stop offset="0%" stopColor={SK_L} />
+          <stop offset="50%" stopColor={SK_D} />
+          <stop offset="100%" stopColor={SHAD} />
+        </linearGradient>
+      </defs>
       <g style={animated ? { animation: 'float 3s ease-in-out infinite' } : undefined}>
         {aura > 0 && (
-          <circle cx="60" cy="54" r={Math.min(58, 46 + aura * 120)} fill={accent} opacity={0.06 + aura * 3}
+          <circle cx="60" cy="58" r={Math.min(58, 46 + aura * 130)} fill={accent} opacity={0.05 + aura * 3}
             style={animated ? { animation: 'pulseGlow 3s ease-in-out infinite' } : undefined} />
         )}
-        <g transform={`rotate(${-slump} 60 72)`}>
-          <rect x={glowX - 2} y="50" width={glowW + 4} height="42" rx="13" fill={accent} opacity="0.08" />
-          <rect x={glowX} y="52" width={glowW} height="40" rx="12" fill={accentLight} stroke={accentBorder} strokeWidth="1.5" />
-          <circle cx="60" cy="34" r="22" fill={accentLight} stroke={accentBorder} strokeWidth="1.5" />
-          {halo && (
-            <g opacity="0.85">
-              <ellipse cx="60" cy="12" rx="17" ry="5" fill="none" stroke={accent} strokeWidth="1.6" />
-              <rect x="52" y="15" width="16" height="3" rx="1.5" fill={accent} />
+        <g transform={`rotate(${-r(slump)} 60 70)`}>
+          {aura > 0 && (
+            <ellipse cx="60" cy="114" rx={r(10 + shoulder * 0.7)} ry="3.2" fill={accent} opacity={0.3 + aura} />
+          )}
+
+          {/* ==== LEGS ==== */}
+          <g>
+            <path d={`M ${X(hipH - 4.5)} 72 L ${X(hipH + 1)} 72 Q ${X(hipH + 2.5)} 86 ${X(hipH + 1)} 91 L ${X(hipH + 1.6)} 101 L ${X(hipH + 0.5)} 105 L ${X(-4)} 105 L ${X(-3.5)} 101 Q ${X(-2)} 95 ${X(hipH - 3)} 90 Z`}
+              fill={`url(#${grad})`} stroke={SHAD} strokeWidth="0.6" />
+            <path d={`M ${X(-hipH + 4.5)} 72 L ${X(-hipH - 1)} 72 Q ${X(-hipH - 2.5)} 86 ${X(-hipH - 1)} 91 L ${X(-hipH - 1.6)} 101 L ${X(-hipH - 0.5)} 105 L ${X(4)} 105 L ${X(3.5)} 101 Q ${X(2)} 95 ${X(hipH - 4)} 87 Z`}
+              fill={`url(#${grad})`} stroke={SHAD} strokeWidth="0.6" />
+            {mus > 0.3 && (
+              <g opacity={mus * 0.5}>
+                <path d={`M ${X(chest - 3.5)} 78 L ${X(4.5)} 92 L ${X(1)} 92 Z`} fill="#fff" opacity="0.35" />
+                <path d={`M ${X(-chest + 3.5)} 78 L ${X(-4.5)} 92 L ${X(-1)} 92 Z`} fill="#fff" opacity="0.35" />
+              </g>
+            )}
+            <rect x={X(6)} y="105" width="16" height="7" rx="3.2" fill={SHOE} transform="rotate(-5 68 108)" />
+            <rect x={X(-6)} y="105" width="16" height="7" rx="3.2" fill={SHOE} transform="rotate(5 52 108)" />
+          </g>
+
+          {/* ==== SHORTS ==== */}
+          <path d={`M ${X(-hipH)} 60 L ${X(hipH)} 60 Q ${X(hipH + 1)} 64 ${X(hipH + 0.5)} 73 Q ${X(hipH)} 81 ${X(hipH - 1.5)} 85 L ${X(7)} 86 L ${X(-7)} 86 L ${X(-hipH + 1.5)} 85 Q ${X(-hipH)} 81 ${X(-hipH - 0.5)} 73 Q ${X(-hipH - 1)} 64 ${X(-hipH)} 60 Z`}
+            fill={SHORT} stroke={`rgba(0,0,0,0.3)`} strokeWidth="0.7" />
+          <rect x={X(-hipH)} y="58.5" width={hipH * 2} height="3.4" rx="1.7" fill={accent} />
+          {t >= 3 && (
+            <path d={`M ${X(-hipH + 1)} 74 Q ${X(0)} 80 ${X(hipH - 1)} 74`} fill="none" stroke={accent} strokeWidth="1.4" strokeLinecap="round" opacity="0.8" />
+          )}
+
+          {/* ==== LEFT ARM ==== */}
+          <path d={`M ${X(-shoulder + 2)} 42 L ${X(-shoulder + 4)} 55 L ${X(-shoulder + 2)} 66`} stroke={SK_D} strokeWidth={armU * 2} strokeLinecap="round" fill="none" />
+          <path d={`M ${X(-shoulder + 2)} 66 L ${X(-shoulder + 1)} 84 L ${X(-shoulder + 0.5)} 95`} stroke={SK_D} strokeWidth={armF * 2} strokeLinecap="round" fill="none" />
+          <circle cx={X(-shoulder + 0.5)} cy="96.5" r="2.3" fill={SK_L} stroke={SHAD} strokeWidth="0.5" />
+          <circle cx={X(-shoulder + 3)} cy="45" r={deltR} fill={SK_L} stroke={SHAD} strokeWidth="0.6" />
+          {mus > 0.35 && (
+            <ellipse cx={X(-shoulder + 2)} cy="60" rx="2.6" ry="4.8" fill="#fff" opacity={mus * 0.25} transform={`rotate(-15 ${X(-shoulder + 2)} 60)`} />
+          )}
+
+          {/* ==== RIGHT ARM ==== */}
+          <path d={`M ${X(shoulder - 2)} 42 L ${X(shoulder - 2)} 55 L ${X(shoulder - 1)} 66`} stroke={SK_D} strokeWidth={armU * 2} strokeLinecap="round" fill="none" />
+          <path d={`M ${X(shoulder - 1)} 66 L ${X(shoulder)} 84 L ${X(shoulder + 0.5)} 95`} stroke={SK_D} strokeWidth={armF * 2} strokeLinecap="round" fill="none" />
+          <circle cx={X(shoulder + 0.5)} cy="96.5" r="2.3" fill={SK_L} stroke={SHAD} strokeWidth="0.5" />
+          <circle cx={X(shoulder - 3)} cy="44" r={deltR} fill={SK_L} stroke={SHAD} strokeWidth="0.6" />
+          {mus > 0.35 && (
+            <ellipse cx={X(shoulder - 2)} cy="60" rx="2.6" ry="4.8" fill="#fff" opacity={mus * 0.25} transform={`rotate(15 ${X(shoulder - 2)} 60)`} />
+          )}
+
+          {/* ==== NECK + TRAPS ==== */}
+          <path d={`M ${X(-neckH)} 30 L ${X(neckH)} 30 L ${X(neckH)} 41 L ${X(-neckH)} 41 Z`} fill={SK_D} stroke={SHAD} strokeWidth="0.6" />
+          {t >= 3 && (
+            <g opacity="0.9">
+              <path d={`M ${X(-neckH + 0.5)} 37 Q ${X(-shoulder + 2)} 39 ${X(-shoulder + 1)} 43`} stroke={SK_L} strokeWidth={3} strokeLinecap="round" fill="none" />
+              <path d={`M ${X(neckH - 0.5)} 37 Q ${X(shoulder - 2)} 39 ${X(shoulder - 1)} 43`} stroke={SK_L} strokeWidth={3} strokeLinecap="round" fill="none" />
             </g>
           )}
-          <g style={animated ? { animation: 'blink 4s infinite' } : undefined}>
-            <ellipse cx="51" cy="31" rx={jaw ? 2.6 : 3} ry="3.2" fill={accent} />
-            <ellipse cx="69" cy="31" rx={jaw ? 2.6 : 3} ry="3.2" fill={accent} />
-          </g>
-          {jaw ? (
-            <path d="M28 40 Q60 56 92 40" stroke={accent} strokeWidth="2.2" strokeLinecap="round" fill="none" opacity="0.55" />
-          ) : (
-            <path d="M51 40 Q54 44 60 44 Q66 44 69 40" stroke={accent} strokeWidth="1.5" strokeLinecap="round" fill="none" />
+
+          {/* ==== TORSO ==== */}
+          <path d={torsoPath} fill={`url(#${grad})`} stroke={SHAD} strokeWidth="0.9" />
+          {mus > 0.1 && (
+            <g opacity={0.15 + mus * 0.6}>
+              <path d={`M ${X(-chest + 2)} 47 Q ${X(-1.5)} 53 ${X(0)} 53`} stroke={SHAD} strokeWidth="1.1" strokeLinecap="round" fill="none" />
+              <path d={`M ${X(chest - 2)} 47 Q ${X(1.5)} 53 ${X(0)} 53`} stroke={SHAD} strokeWidth="1.1" strokeLinecap="round" fill="none" />
+              <path d={`M ${X(-chest + 3)} 45 L ${X(chest - 3)} 45`} stroke={SHAD} strokeWidth="0.9" opacity="0.7" />
+            </g>
           )}
-          <rect x={glowX - 16} y="58" width="16" height="9" rx="4" fill={accentLight} stroke={accentBorder} strokeWidth="1.2" />
-          <rect x={glowX + glowW} y="58" width="16" height="9" rx="4" fill={accentLight} stroke={accentBorder} strokeWidth="1.2" />
-          <rect x={glowX + glowW * 0.3} y="88" width="10" height="17" rx="4" fill={accentLight} stroke={accentBorder} strokeWidth="1.2" />
-          <rect x={glowX + glowW * 0.52} y="88" width="10" height="17" rx="4" fill={accentLight} stroke={accentBorder} strokeWidth="1.2" />
+          {mus > 0.15 && (
+            <g opacity={mus}>
+              {[50.5, 56.5, 62.5].map((yy, ri) => (
+                <g key={ri}>
+                  <rect x={X(-4)} y={yy} width="4.6" height="4.2" rx="1.3" fill={SHAD} opacity="0.7" />
+                  <rect x={X(-0.6)} y={yy} width="4.6" height="4.2" rx="1.3" fill={SHAD} opacity="0.7" />
+                </g>
+              ))}
+              {[50.5, 56.5, 62.5].map((yy, ri) => (
+                <line key={ri} x1={X(-4.7)} y1={yy + 4.1} x2={X(4.7)} y2={yy + 4.1} stroke={SHAD} strokeWidth="0.5" opacity="0.5" />
+              ))}
+            </g>
+          )}
+
+          {/* ==== HEAD ==== */}
+          <g>
+            <circle cx="48.6" cy="24" r="2.1" fill={SK_L} stroke={SHAD} strokeWidth="0.5" />
+            <circle cx="71.4" cy="24" r="2.1" fill={SK_L} stroke={SHAD} strokeWidth="0.5" />
+            <circle cx="60" cy="22" r="12.5" fill={`url(#${grad})`} stroke={SHAD} strokeWidth="0.8" />
+            {/* hair */}
+            <path d={`M 47.5 20 Q 46.5 4 60 2.5 Q 73.5 4 72.5 20 Q 62 26 47.5 20 Z`} fill={HAIR} />
+            <path d={`M 50 18.5 Q 60 15.5 70 18.5`} stroke={HAIR} strokeWidth="1" opacity="0.6" fill="none" />
+            {/* brows */}
+            <path d="M 51.5 17 L 57 17.5" stroke={INK} strokeWidth="0.9" strokeLinecap="round" />
+            <path d="M 68.5 17 L 63 17.5" stroke={INK} strokeWidth="0.9" strokeLinecap="round" />
+            {/* eyes */}
+            <g style={animated ? { animation: 'blink 4s infinite' } : undefined}>
+              <circle cx="54.7" cy="20.5" r="1.5" fill={INK} />
+              <circle cx="65.3" cy="20.5" r="1.5" fill={INK} />
+              <circle cx="55.3" cy="20" r="0.5" fill="#fff" opacity="0.9" />
+              <circle cx="65.9" cy="20" r="0.5" fill="#fff" opacity="0.9" />
+            </g>
+            {/* nose */}
+            <path d="M 60 22 L 60 24.6 L 59.1 24.9" stroke={INK} strokeWidth="0.7" strokeLinecap="round" opacity="0.8" />
+            {/* mouth */}
+            <path d={`M 56.6 26.4 Q 60 ${definedJaw ? 28.4 : 27.4} 63.4 26.4`} stroke={INK} strokeWidth="0.8" strokeLinecap="round" />
+            {/* jaw */}
+            {definedJaw && (
+              <path d={`M 48 26 Q 54 31 60 31 Q 66 31 72 26`} fill="none" stroke={SHAD} strokeWidth="1.3" strokeLinecap="round" opacity="0.7" />
+            )}
+          </g>
+
+          {/* ==== EXTRAS ==== */}
+          {halo && (
+            <g opacity="0.85">
+              <ellipse cx="60" cy="4.5" rx="16" ry="3.6" fill="none" stroke={accent} strokeWidth="1.4" />
+              <rect x="53" y="7.2" width="14" height="2.6" rx="1.3" fill={accent} />
+            </g>
+          )}
           {crown && (
-            <path d="M41 20 L60 3 L77 20 Q68 24 60 24 Q52 24 41 20 Z" fill={accent} />
+            <path d="M 41 16 L 60 0 L 79 16 Q 69 20 60 19 Q 51 20 41 16 Z" fill={accent} />
           )}
           {sparkle && (
             <g>
-              <polygon points="88,20 90,16 92,20 96,22 92,24 90,28 88,24 84,22" fill={accent} opacity="0.5"
-                style={animated ? { animation: 'sparkle 2s ease-in-out infinite', transformOrigin: '90px 22px' } : undefined} />
-              <polygon points="24,42 26,38 28,42 31,44 28,46 26,50 24,46 21,44" fill={accent} opacity="0.4"
-                style={animated ? { animation: 'sparkle 2.4s ease-in-out infinite 0.6s', transformOrigin: '26px 44px' } : undefined} />
+              <polygon points="92,14 94,10 96,14 100,16 96,18 94,22 92,18 88,16" fill={accent} opacity="0.5"
+                style={animated ? { animation: 'sparkle 2s ease-in-out infinite', transformOrigin: '94px 16px' } : undefined} />
+              <polygon points="24,40 26,36 28,40 31,42 28,44 26,48 24,44 21,42" fill={accent} opacity="0.4"
+                style={animated ? { animation: 'sparkle 2.4s ease-in-out infinite 0.6s', transformOrigin: '26px 42px' } : undefined} />
             </g>
+          )}
+          {aura > 0 && (
+            <ellipse cx="60" cy="60" rx={chest * 0.6} ry={waistH * 0.8} fill="none" stroke={accent} strokeWidth="1" opacity={0.15 + aura * 2} strokeDasharray="3 3" />
           )}
         </g>
       </g>
