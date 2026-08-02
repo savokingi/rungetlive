@@ -4,6 +4,7 @@ export const ROUTES = {
   AI: '/ai',
   PROFILE: '/profile',
   CHARACTER: '/character',
+  EVOLUTION: '/evolution',
   CUSTOMIZATION: '/customization',
   ACHIEVEMENTS: '/achievements',
   SETTINGS: '/settings',
@@ -21,6 +22,7 @@ export const MENU_ITEMS = [
   { path: ROUTES.AI, label: 'ИИ-ассистент' },
   { path: ROUTES.PROFILE, label: 'Профиль' },
   { path: ROUTES.CHARACTER, label: 'Персонаж' },
+  { path: ROUTES.EVOLUTION, label: 'Эволюция' },
   { path: ROUTES.ACHIEVEMENTS, label: 'Достижения' },
   { path: ROUTES.SETTINGS, label: 'Настройки' },
 ] as const

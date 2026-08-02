@@ -12,6 +12,7 @@ const AIScreen = lazy(() => import('./screens/AIScreen').then(m => ({ default: m
 const ProfileScreen = lazy(() => import('./screens/ProfileScreen').then(m => ({ default: m.ProfileScreen })))
 const SettingsScreen = lazy(() => import('./screens/SettingsScreen').then(m => ({ default: m.SettingsScreen })))
 const CharacterScreen = lazy(() => import('./screens/CharacterScreen').then(m => ({ default: m.CharacterScreen })))
+const EvolutionScreen = lazy(() => import('./screens/EvolutionScreen').then(m => ({ default: m.EvolutionScreen })))
 const AchievementsScreen = lazy(() => import('./screens/AchievementsScreen').then(m => ({ default: m.AchievementsScreen })))
 
 function Loading() {
@@ -32,6 +33,7 @@ function App() {
                 <Route path={ROUTES.PROFILE} element={<ProfileScreen />} />
                 <Route path={ROUTES.SETTINGS} element={<SettingsScreen />} />
                 <Route path={ROUTES.CHARACTER} element={<CharacterScreen />} />
+                <Route path={ROUTES.EVOLUTION} element={<EvolutionScreen />} />
                 <Route path={ROUTES.CUSTOMIZATION} element={<Navigate to={ROUTES.CHARACTER} replace />} />
                 <Route path={ROUTES.ACHIEVEMENTS} element={<AchievementsScreen />} />
               </Routes>
