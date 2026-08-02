@@ -5,20 +5,11 @@ import { TabBar } from '../components/TabBar'
 import { PageHeader } from '../components/PageHeader'
 import { useApp } from '../context/AppContext'
 import { getNextLevel } from '../constants/levels'
-import {
-  CharacterDefault,
-  CharacterRunner,
-  CharacterScholar,
-  CharacterMaster,
-  CharacterLegend,
-} from '../components/CharacterSVG'
+import { CHARACTER_MAP } from '../components/CharacterSVG'
 
-const previewMap: Record<string, React.ReactNode> = {
-  user: <CharacterDefault size={44} animated />,
-  zap: <CharacterRunner size={44} animated />,
-  'book-open': <CharacterScholar size={44} animated />,
-  crown: <CharacterMaster size={44} animated />,
-  star: <CharacterLegend size={44} animated />,
+function renderPreview(preview?: string) {
+  const C = preview ? CHARACTER_MAP[preview] : undefined
+  return C ? <C size={44} animated /> : null
 }
 
 function LevelProgress({ current, required }: { current: number; required: number }) {
@@ -109,13 +100,15 @@ export function CharacterScreen() {
                       color: isUnlocked ? 'var(--color-accent)' : 'var(--color-text-muted)',
                       position: 'relative',
                     }}>
-                      {previewMap[skin.preview]}
+                      {renderPreview(skin.preview)}
                       {!isUnlocked && <Lock size={12} style={{ position: 'absolute', bottom: -2, right: -2, color: 'var(--color-text-muted)' }} />}
                       {isCurrent && <Check size={12} style={{ position: 'absolute', bottom: -2, right: -2, color: 'var(--color-accent)' }} />}
                     </div>
                     <span style={{ fontSize: '12px', fontWeight: 500, color: isUnlocked ? 'var(--color-text)' : 'var(--color-text-muted)' }}>{skin.name}</span>
                     <span style={{ fontSize: '10px', color: isUnlocked ? 'var(--color-text-muted)' : 'var(--color-text-secondary)' }}>
-                      {isUnlocked ? (isCurrent ? 'Выбран' : 'Доступен') : `Ур. ${skin.unlockLevel}`}
+                      {isUnlocked ? (isCurrent ? 'Выбран' : 'Доступен') : (
+                        typeof skin.unlockLevel === 'number' ? `Ур. ${skin.unlockLevel}` : 'За достижение'
+                      )}
                     </span>
                   </button>
                 )

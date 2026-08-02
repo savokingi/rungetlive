@@ -3,6 +3,7 @@ import { Card } from '../components/Card'
 import { TabBar } from '../components/TabBar'
 import { PageHeader } from '../components/PageHeader'
 import { useApp } from '../context/AppContext'
+import type { Achievement } from '../types'
 
 const iconMap: Record<string, React.ReactNode> = {
   target: <Target size={20} />,
@@ -10,6 +11,15 @@ const iconMap: Record<string, React.ReactNode> = {
   swords: <Swords size={20} />,
   medal: <Medal size={20} />,
   'check-circle': <CheckCircle2 size={20} />,
+}
+
+function currentValue(achievement: Achievement, profile: { tasksCompleted: number; streak: number; daysInGame: number; level: number }) {
+  switch (achievement.kind) {
+    case 'tasks': return profile.tasksCompleted
+    case 'streak': return profile.streak
+    case 'days': return profile.daysInGame
+    case 'level': return profile.level
+  }
 }
 
 export function AchievementsScreen() {
@@ -72,6 +82,12 @@ export function AchievementsScreen() {
                     <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: 1 }}>
                       {achievement.description}
                     </div>
+                    {!achievement.unlocked && (
+                      <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginTop: 3, display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <Target size={10} />
+                        {currentValue(achievement, state.profile)} из {achievement.target}
+                      </div>
+                    )}
                     {achievement.unlocked && achievement.unlockedAt && (
                       <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
                         <Clock size={10} /> {new Date(achievement.unlockedAt).toLocaleDateString('ru-RU')}

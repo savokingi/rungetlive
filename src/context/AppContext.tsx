@@ -37,22 +37,60 @@ const INITIAL_PROFILE: UserProfile = {
 }
 
 const INITIAL_SKINS: Skin[] = [
-  { id: 'default', name: 'Стандартный', preview: 'user', unlockLevel: 1, unlocked: true },
-  { id: 'runner', name: 'Бегун', preview: 'zap', unlockLevel: 5, unlocked: false },
-  { id: 'scholar', name: 'Учёный', preview: 'book-open', unlockLevel: 10, unlocked: false },
-  { id: 'master', name: 'Мастер', preview: 'crown', unlockLevel: 15, unlocked: false },
-  { id: 'legend', name: 'Легенда', preview: 'star', unlockLevel: 20, unlocked: false },
+  // Levels — "Adam progression" (Sub-3 → True Adam)
+  { id: 'default', name: 'Новичок', preview: 'adam1', unlockLevel: 1, unlocked: true },
+  { id: 'adam2', name: 'Обычный', preview: 'adam2', unlockLevel: 3, unlocked: false },
+  { id: 'adam3', name: 'Заметный', preview: 'adam3', unlockLevel: 5, unlocked: false },
+  { id: 'adam4', name: 'Уверенный', preview: 'adam4', unlockLevel: 7, unlocked: false },
+  { id: 'adam5', name: 'Харизматичный', preview: 'adam5', unlockLevel: 9, unlocked: false },
+  { id: 'adam6', name: 'Лидер', preview: 'adam6', unlockLevel: 11, unlocked: false },
+  { id: 'adam7', name: 'Chad', preview: 'adam7', unlockLevel: 13, unlocked: false },
+  { id: 'adam8', name: 'Superior', preview: 'adam8', unlockLevel: 15, unlocked: false },
+  { id: 'adam9', name: 'Пиковый', preview: 'adam9', unlockLevel: 18, unlocked: false },
+  { id: 'adam10', name: 'True Adam', preview: 'adam10', unlockLevel: 20, unlocked: false },
+  // Achievements — themed (specialized)
+  { id: 'runner', name: 'Спринтер', preview: 'zap', unlockAchievement: 'first_task', unlocked: false },
+  { id: 'scholar', name: 'Учёный', preview: 'book-open', unlockAchievement: 'ten_tasks', unlocked: false },
+  { id: 'chef', name: 'Шеф-повар', preview: 'chef', unlockAchievement: 'fifty_tasks', unlocked: false },
+  { id: 'artist', name: 'Художник', preview: 'artist', unlockAchievement: 'hundred_tasks', unlocked: false },
+  { id: 'warrior', name: 'Воитель', preview: 'swords', unlockAchievement: 'week_streak', unlocked: false },
+  { id: 'explorer', name: 'Исследователь', preview: 'compass', unlockAchievement: 'month_days', unlocked: false },
+  { id: 'musician', name: 'Музыкант', preview: 'music', unlockAchievement: 'level_7', unlocked: false },
+  { id: 'doctor', name: 'Доктор', preview: 'cross', unlockAchievement: 'level_10', unlocked: false },
+  { id: 'business', name: 'Бизнесмен', preview: 'briefcase', unlockAchievement: 'level_15', unlocked: false },
+  { id: 'astronaut', name: 'Астронавт', preview: 'rocket', unlockAchievement: 'max_level', unlocked: false },
 ]
 
 const INITIAL_AI_CONFIG: AIConfig = { type: 'subscription', customApiKey: '', customBaseUrl: '' }
 
 const INITIAL_ACHIEVEMENTS: Achievement[] = [
-  { id: 'first_task', name: 'Первый шаг', title: 'Первый шаг', description: 'Выполни первую задачу', icon: 'target', unlocked: false, unlockedAt: null },
-  { id: 'week_streak', name: 'Неделя без пропусков', title: 'Неделя без пропусков', description: '7 дней подряд', icon: 'flame', unlocked: false, unlockedAt: null },
-  { id: 'level_5', name: 'Рыцарь порядка', title: 'Рыцарь порядка', description: 'Достигни 5 уровня', icon: 'swords', unlocked: false, unlockedAt: null },
-  { id: 'level_10', name: 'Мастер дисциплины', title: 'Мастер дисциплины', description: 'Достигни 10 уровня', icon: 'medal', unlocked: false, unlockedAt: null },
-  { id: 'hundred_tasks', name: 'Сотня дел', title: 'Сотня дел', description: 'Выполни 100 задач', icon: 'check-circle', unlocked: false, unlockedAt: null },
+  { id: 'first_task', name: 'Первый шаг', title: 'Первый шаг', description: 'Выполни 1 задачу', icon: 'target', kind: 'tasks', target: 1, unlocked: false, unlockedAt: null },
+  { id: 'ten_tasks', name: 'Десять дел', title: 'Десять дел', description: 'Выполни 10 задач', icon: 'check-circle', kind: 'tasks', target: 10, unlocked: false, unlockedAt: null },
+  { id: 'fifty_tasks', name: 'Пятьдесят дел', title: 'Пятьдесят дел', description: 'Выполни 50 задач', icon: 'medal', kind: 'tasks', target: 50, unlocked: false, unlockedAt: null },
+  { id: 'hundred_tasks', name: 'Сотня дел', title: 'Сотня дел', description: 'Выполни 100 задач', icon: 'check-circle', kind: 'tasks', target: 100, unlocked: false, unlockedAt: null },
+  { id: 'week_streak', name: 'Неделя без пропусков', title: 'Неделя без пропусков', description: '7 дней серии', icon: 'flame', kind: 'streak', target: 7, unlocked: false, unlockedAt: null },
+  { id: 'month_days', name: 'Месяц в игре', title: 'Месяц в игре', description: '30 дней с запуска', icon: 'calendar', kind: 'days', target: 30, unlocked: false, unlockedAt: null },
+  { id: 'level_7', name: 'Рыцарь порядка', title: 'Рыцарь порядка', description: 'Достигни 7 уровня', icon: 'swords', kind: 'level', target: 7, unlocked: false, unlockedAt: null },
+  { id: 'level_10', name: 'Мастер дисциплины', title: 'Мастер дисциплины', description: 'Достигни 10 уровня', icon: 'medal', kind: 'level', target: 10, unlocked: false, unlockedAt: null },
+  { id: 'level_15', name: 'Легенда', title: 'Легенда', description: 'Достигни 15 уровня', icon: 'star', kind: 'level', target: 15, unlocked: false, unlockedAt: null },
+  { id: 'max_level', name: 'Предел', title: 'Предел', description: 'Достигни 20 уровня', icon: 'trophy', kind: 'level', target: 20, unlocked: false, unlockedAt: null },
 ]
+
+function computeUnlockedAchievements(profile: UserProfile): Set<string> {
+  const ids = new Set<string>()
+  const add = (id: string, cond: boolean) => { if (cond) ids.add(id) }
+  add('first_task', profile.tasksCompleted >= 1)
+  add('ten_tasks', profile.tasksCompleted >= 10)
+  add('fifty_tasks', profile.tasksCompleted >= 50)
+  add('hundred_tasks', profile.tasksCompleted >= 100)
+  add('week_streak', profile.streak >= 7)
+  add('month_days', profile.daysInGame >= 30)
+  add('level_7', profile.level >= 7)
+  add('level_10', profile.level >= 10)
+  add('level_15', profile.level >= 15)
+  add('max_level', profile.level >= 20)
+  return ids
+}
 
 interface AppState {
   profile: UserProfile
@@ -178,23 +216,13 @@ function appReducer(state: AppState, action: AppAction): AppState {
         xpAfterLevel = 0
       }
 
-      const newAchievements = [...state.achievements]
-      const unlock = (id: string) => {
-        const i = newAchievements.findIndex(a => a.id === id)
-        if (i >= 0 && !newAchievements[i].unlocked) {
-          newAchievements[i] = { ...newAchievements[i], unlocked: true, unlockedAt: Date.now() }
-        }
-      }
-      if (newTasksCompleted >= 1) unlock('first_task')
-      if (newTasksCompleted >= 100) unlock('hundred_tasks')
-      if (newLevel >= 5) unlock('level_5')
-      if (newLevel >= 10) unlock('level_10')
-      if (streak >= 7) unlock('week_streak')
+      const newAchievements = state.achievements
 
       let newSkins = state.skins
       let newSelectedSkinId = state.selectedSkinId
       if (newLevel !== state.profile.level) {
         const skinToSelect = [...state.skins]
+          .filter((s): s is Skin & { unlockLevel: number } => typeof s.unlockLevel === 'number')
           .filter(s => s.unlockLevel <= newLevel)
           .sort((a, b) => b.unlockLevel - a.unlockLevel)[0]
         if (skinToSelect && skinToSelect.id !== state.selectedSkinId) {
@@ -366,21 +394,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [state.profile])
 
   const checkAchievements = useCallback(() => {
-    const { profile } = state
-    if (profile.tasksCompleted >= 1) dispatch({ type: 'UNLOCK_ACHIEVEMENT', payload: 'first_task' })
-    if (profile.tasksCompleted >= 100) dispatch({ type: 'UNLOCK_ACHIEVEMENT', payload: 'hundred_tasks' })
-    if (profile.level >= 5) dispatch({ type: 'UNLOCK_ACHIEVEMENT', payload: 'level_5' })
-    if (profile.level >= 10) dispatch({ type: 'UNLOCK_ACHIEVEMENT', payload: 'level_10' })
-    if (profile.streak >= 7) dispatch({ type: 'UNLOCK_ACHIEVEMENT', payload: 'week_streak' })
+    computeUnlockedAchievements(state.profile).forEach(id => dispatch({ type: 'UNLOCK_ACHIEVEMENT', payload: id }))
   }, [state.profile])
 
   useEffect(() => {
+    computeUnlockedAchievements(state.profile).forEach(id => dispatch({ type: 'UNLOCK_ACHIEVEMENT', payload: id }))
+  }, [state.profile.tasksCompleted, state.profile.streak, state.profile.daysInGame, state.profile.level])
+
+  useEffect(() => {
+    const unlockedIds = new Set(state.achievements.filter(a => a.unlocked).map(a => a.id))
     state.skins.forEach(skin => {
-      if (!skin.unlocked && state.profile.level >= skin.unlockLevel) {
+      if (skin.unlocked) return
+      const byLevel = typeof skin.unlockLevel === 'number' && state.profile.level >= skin.unlockLevel
+      const byAchievement = typeof skin.unlockAchievement === 'string' && unlockedIds.has(skin.unlockAchievement)
+      if (byLevel || byAchievement) {
         dispatch({ type: 'UNLOCK_SKIN', payload: skin.id })
       }
     })
-  }, [state.profile.level])
+  }, [state.profile.level, state.achievements])
 
   return (
     <AppContext.Provider value={{ state, dispatch, addTask, getTasksForDate, getLevelProgress, checkAchievements }}>

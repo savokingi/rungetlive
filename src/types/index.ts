@@ -62,6 +62,8 @@ export interface Achievement {
   title: string
   description: string
   icon: string
+  kind: 'level' | 'tasks' | 'streak' | 'days'
+  target: number
   unlocked: boolean
   unlockedAt: number | null
 }
@@ -70,7 +72,8 @@ export interface Skin {
   id: string
   name: string
   preview: string
-  unlockLevel: number
+  unlockLevel?: number
+  unlockAchievement?: string
   unlocked: boolean
 }
 

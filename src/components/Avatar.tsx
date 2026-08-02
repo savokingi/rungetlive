@@ -1,19 +1,5 @@
 import { User } from 'lucide-react'
-import {
-  CharacterDefault,
-  CharacterRunner,
-  CharacterScholar,
-  CharacterMaster,
-  CharacterLegend,
-} from './CharacterSVG'
-
-const characterMap: Record<string, typeof CharacterDefault> = {
-  user: CharacterDefault,
-  zap: CharacterRunner,
-  'book-open': CharacterScholar,
-  crown: CharacterMaster,
-  star: CharacterLegend,
-}
+import { CHARACTER_MAP } from './CharacterSVG'
 
 interface AvatarProps {
   src?: string
@@ -32,7 +18,7 @@ export function Avatar({ src, name, size = 'md', skinId }: AvatarProps) {
     ? name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
     : ''
 
-  const CharComponent = skinId ? characterMap[skinId] : undefined
+  const CharComponent = skinId ? CHARACTER_MAP[skinId] : undefined
 
   return (
     <div

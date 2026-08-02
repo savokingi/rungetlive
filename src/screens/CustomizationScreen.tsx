@@ -1,16 +1,14 @@
-import { Check, Lock, User, Zap, BookOpen, Crown, Star } from 'lucide-react'
+import { Check, Lock } from 'lucide-react'
 import { Avatar } from '../components/Avatar'
 import { Card } from '../components/Card'
 import { TabBar } from '../components/TabBar'
 import { PageHeader } from '../components/PageHeader'
 import { useApp } from '../context/AppContext'
+import { CHARACTER_MAP } from '../components/CharacterSVG'
 
-const iconMap: Record<string, React.ReactNode> = {
-  user: <User size={28} />,
-  zap: <Zap size={28} />,
-  'book-open': <BookOpen size={28} />,
-  crown: <Crown size={28} />,
-  star: <Star size={28} />,
+function renderPreview(preview?: string) {
+  const C = preview ? CHARACTER_MAP[preview] : undefined
+  return C ? <C size={44} animated /> : null
 }
 
 export function CustomizationScreen() {
@@ -56,7 +54,7 @@ export function CustomizationScreen() {
                     background: 'linear-gradient(135deg, var(--color-accent-light), var(--color-accent-border))',
                     color: 'var(--color-accent)',
                   }}>
-                    {iconMap[skin.preview] || <User size={28} />}
+                    {renderPreview(skin.preview)}
                   </div>
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: '13px', fontWeight: 600, color: skin.unlocked ? 'var(--color-text)' : 'var(--color-text-muted)' }}>{skin.name}</div>
@@ -70,7 +68,7 @@ export function CustomizationScreen() {
                       )
                     ) : (
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 4, fontSize: '11px', color: 'var(--color-text-muted)' }}>
-                        <Lock size={10} /> Ур. {skin.unlockLevel}
+                        <Lock size={10} /> {typeof skin.unlockLevel === 'number' ? `Ур. ${skin.unlockLevel}` : 'За достижение'}
                       </div>
                     )}
                   </div>

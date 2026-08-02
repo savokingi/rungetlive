@@ -5,28 +5,14 @@ import { TabBar } from '../components/TabBar'
 import { PageHeader } from '../components/PageHeader'
 import { useApp } from '../context/AppContext'
 import { ROUTES } from '../constants/routes'
-import {
-  CharacterDefault,
-  CharacterRunner,
-  CharacterScholar,
-  CharacterMaster,
-  CharacterLegend,
-} from '../components/CharacterSVG'
-
-const characterMap: Record<string, React.FC<{ size?: number; animated?: boolean }>> = {
-  user: CharacterDefault,
-  zap: CharacterRunner,
-  'book-open': CharacterScholar,
-  crown: CharacterMaster,
-  star: CharacterLegend,
-}
+import { CHARACTER_MAP } from '../components/CharacterSVG'
 
 export function MainScreen() {
   const navigate = useNavigate()
   const { state, getLevelProgress } = useApp()
   const { profile, selectedSkinId, skins } = state
   const currentSkin = skins.find(s => s.id === selectedSkinId)
-  const CharComponent = currentSkin ? characterMap[currentSkin.preview] : undefined
+  const CharComponent = currentSkin ? CHARACTER_MAP[currentSkin.preview] : undefined
   const progress = getLevelProgress()
 
   return (
