@@ -10,6 +10,7 @@ const MainScreen = lazy(() => import('./screens/MainScreen').then(m => ({ defaul
 const TasksScreen = lazy(() => import('./screens/TasksScreen').then(m => ({ default: m.TasksScreen })))
 const AIScreen = lazy(() => import('./screens/AIScreen').then(m => ({ default: m.AIScreen })))
 const ProfileScreen = lazy(() => import('./screens/ProfileScreen').then(m => ({ default: m.ProfileScreen })))
+const StatsScreen = lazy(() => import('./screens/StatsScreen').then(m => ({ default: m.StatsScreen })))
 const SettingsScreen = lazy(() => import('./screens/SettingsScreen').then(m => ({ default: m.SettingsScreen })))
 const CharacterScreen = lazy(() => import('./screens/CharacterScreen').then(m => ({ default: m.CharacterScreen })))
 const EvolutionScreen = lazy(() => import('./screens/EvolutionScreen').then(m => ({ default: m.EvolutionScreen })))
@@ -31,6 +32,7 @@ function App() {
                 <Route path={ROUTES.TASKS} element={<TasksScreen />} />
                 <Route path={ROUTES.AI} element={<AIScreen />} />
                 <Route path={ROUTES.PROFILE} element={<ProfileScreen />} />
+                <Route path={ROUTES.STATS} element={<StatsScreen />} />
                 <Route path={ROUTES.SETTINGS} element={<SettingsScreen />} />
                 <Route path={ROUTES.CHARACTER} element={<CharacterScreen />} />
                 <Route path={ROUTES.EVOLUTION} element={<EvolutionScreen />} />
