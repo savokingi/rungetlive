@@ -1,6 +1,6 @@
 import { localDateKey } from './progression'
 
-const MODEL = 'gemini-2.5-flash'
+const MODEL = 'gemini-flash-latest'
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`
 
 export interface GeminiTask {
