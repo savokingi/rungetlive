@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Zap, ArrowRight } from 'lucide-react'
+import { Zap, ArrowRight, User } from 'lucide-react'
 import { Button } from '../components/Button'
 import { TabBar } from '../components/TabBar'
 import { PageHeader } from '../components/PageHeader'
@@ -21,7 +21,16 @@ export function MainScreen() {
 
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px 40px' }}>
         <div style={{ width: 160, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {CharComponent ? <CharComponent size={160} animated /> : null}
+          {CharComponent ? <CharComponent size={160} animated /> : (
+            <div style={{
+              width: 150, height: 150, borderRadius: '50%',
+              background: 'var(--color-border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--color-text-muted)',
+            }}>
+              <User size={64} strokeWidth={1.5} />
+            </div>
+          )}
         </div>
         <div style={{ marginTop: 8 }}>
           <span style={{
@@ -39,7 +48,7 @@ export function MainScreen() {
             <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.3px', marginTop: 2 }}>Уровень</div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '22px', fontWeight: 600, color: 'var(--color-text)' }}>{progress.current} / {progress.required || '-'}</div>
+            <div style={{ fontSize: '22px', fontWeight: 600, color: 'var(--color-text)' }}>{profile.level >= 20 ? 'МАКС' : `${progress.current} / ${progress.required || '-'}`}</div>
             <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.3px', marginTop: 2 }}>XP</div>
           </div>
           <div style={{ textAlign: 'center' }}>

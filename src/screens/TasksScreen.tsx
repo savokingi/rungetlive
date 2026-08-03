@@ -8,13 +8,14 @@ import { TabBar } from '../components/TabBar'
 import { PageHeader } from '../components/PageHeader'
 import { useApp } from '../context/AppContext'
 import { Task, RepeatConfig } from '../types'
-import { isCompletedOn } from '../utils/progression'
+import { isCompletedOn, localDateKey } from '../utils/progression'
 
 export function TasksScreen() {
   const { state, getTasksForDate, addTask, dispatch } = useApp()
   const { selectedDate } = state
 
   const [modalOpen, setModalOpen] = useState(false)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [formErrors, setFormErrors] = useState<{ title?: string; points?: string; time?: string }>({})
   const [form, setForm] = useState<Omit<Task, 'id' | 'createdAt'>>({
@@ -23,7 +24,9 @@ export function TasksScreen() {
     completed: false,
   })
 
-  const tasksForDate = useMemo(() => getTasksForDate(selectedDate), [selectedDate, state.tasks])
+  const tasksForDate = useMemo(() =>
+    getTasksForDate(selectedDate).slice().sort((a, b) => (a.timeStart || '00:00').localeCompare(b.timeStart || '00:00')),
+    [selectedDate, state.tasks])
 
   const handleAdd = () => {
     setEditingTask(null); setFormErrors({})
@@ -43,6 +46,7 @@ export function TasksScreen() {
     if (!form.title.trim()) errors.title = 'Введите название'
     const pts = Number(form.points)
     if (isNaN(pts) || pts < 1) errors.points = 'Минимум 1'
+    else if (pts > 1000) errors.points = 'Максимум 1000'
     if (form.timeStart && form.timeEnd && form.timeStart >= form.timeEnd) errors.time = 'Время начала должно быть раньше конца'
     if (Object.keys(errors).length) { setFormErrors(errors); return }
     if (editingTask) dispatch({ type: 'UPDATE_TASK', payload: { ...editingTask, ...form, points: pts } })
@@ -51,7 +55,8 @@ export function TasksScreen() {
   }
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Удалить задачу?')) dispatch({ type: 'DELETE_TASK', payload: id })
+    dispatch({ type: 'DELETE_TASK', payload: id })
+    setConfirmDeleteId(null)
   }
   const handleToggle = (id: string) => dispatch({ type: 'TOGGLE_TASK', payload: { id, date: selectedDate } })
   const handleRename = (id: string, title: string) => {
@@ -63,7 +68,7 @@ export function TasksScreen() {
   const calendarDays = useMemo(() => {
     const days = []; const start = new Date(today.getFullYear(), today.getMonth(), 1)
     start.setDate(start.getDate() - 7)
-    for (let i = 0; i < 44; i++) { const d = new Date(start); d.setDate(start.getDate() + i); days.push(d.toISOString().split('T')[0]) }
+    for (let i = 0; i < 44; i++) { const d = new Date(start); d.setDate(start.getDate() + i); days.push(localDateKey(d)) }
     return days
   }, [])
 
@@ -81,7 +86,7 @@ export function TasksScreen() {
         scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch',
       }}>
         {calendarDays.map(day => {
-          const isSelected = day === selectedDate; const isToday = day === today.toISOString().split('T')[0]
+          const isSelected = day === selectedDate; const isToday = day === localDateKey(today)
           return (
             <button key={day} onClick={() => dispatch({ type: 'SET_SELECTED_DATE', payload: day })}
               style={{
@@ -115,7 +120,7 @@ export function TasksScreen() {
                 completed={isCompletedOn(task, selectedDate)}
                 onToggle={() => handleToggle(task.id)}
                 onEdit={() => handleEdit(task)}
-                onDelete={() => handleDelete(task.id)}
+                onDelete={() => setConfirmDeleteId(task.id)}
                 onRename={(t) => handleRename(task.id, t)}
               />
             ))}
@@ -139,8 +144,8 @@ export function TasksScreen() {
             <Input label="Баллы" type="number" min="1" max="1000" value={form.points}
               onChange={e => setForm({ ...form, points: e.target.value === '' ? 0 : Number(e.target.value) })}
               inputMode="numeric" error={formErrors.points} />
-            <Select label="Дата" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}
-              options={calendarDays.slice(0, 60).map(d => ({ value: d, label: new Date(d + 'T00:00:00').toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' }) }))} />
+            <Input label="Дата" type="date" value={form.date}
+              onChange={e => setForm({ ...form, date: e.target.value })} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <Input label="От" type="time" value={form.timeStart} onChange={e => setForm({ ...form, timeStart: e.target.value })} />
@@ -172,6 +177,18 @@ export function TasksScreen() {
             <Button variant="primary" type="submit" flex={1}>{editingTask ? 'Сохранить' : 'Добавить'}</Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal isOpen={confirmDeleteId !== null} onClose={() => setConfirmDeleteId(null)} title="Удалить задачу">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+            Задача будет удалена безвозвратно. Продолжить?
+          </p>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <Button variant="secondary" type="button" onClick={() => setConfirmDeleteId(null)} flex={1}>Отмена</Button>
+            <Button variant="danger" type="button" onClick={() => confirmDeleteId && handleDelete(confirmDeleteId)} flex={1}>Удалить</Button>
+          </div>
+        </div>
       </Modal>
     </div>
   )

@@ -79,6 +79,9 @@ export function CharacterScreen() {
               {skins.map(skin => {
                 const isCurrent = selectedSkinId === skin.id
                 const isUnlocked = skin.unlocked
+                const unlockAchievement = skin.unlockAchievement
+                  ? state.achievements.find(a => a.id === skin.unlockAchievement)
+                  : null
                 return (
                   <button key={skin.id}
                     onClick={() => { if (isUnlocked) dispatch({ type: 'SET_SKIN', payload: skin.id }) }}
@@ -107,7 +110,9 @@ export function CharacterScreen() {
                     <span style={{ fontSize: '12px', fontWeight: 500, color: isUnlocked ? 'var(--color-text)' : 'var(--color-text-muted)' }}>{skin.name}</span>
                     <span style={{ fontSize: '10px', color: isUnlocked ? 'var(--color-text-muted)' : 'var(--color-text-secondary)' }}>
                       {isUnlocked ? (isCurrent ? 'Выбран' : 'Доступен') : (
-                        typeof skin.unlockLevel === 'number' ? `Ур. ${skin.unlockLevel}` : 'За достижение'
+                        typeof skin.unlockLevel === 'number'
+                          ? `Ур. ${skin.unlockLevel}`
+                          : unlockAchievement ? unlockAchievement.name : 'За достижение'
                       )}
                     </span>
                   </button>

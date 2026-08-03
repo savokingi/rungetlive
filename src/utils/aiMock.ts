@@ -1,4 +1,5 @@
 import { ParsedTask } from '../types'
+import { localDateKey } from './progression'
 
 type TaskTemplate = { title: string; points: number; timeStart: string; timeEnd: string }
 
@@ -26,8 +27,15 @@ const KEYWORD_TASKS: Record<string, TaskTemplate[]> = {
 
 export function mockAIResponse(userInput: string): { text: string; tasks: ParsedTask[] } {
   const input = userInput.toLowerCase()
-  const today = new Date().toISOString().split('T')[0]
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
+  const today = localDateKey(new Date())
+  const tomorrowDate = new Date(); tomorrowDate.setDate(tomorrowDate.getDate() + 1)
+  const tomorrow = localDateKey(tomorrowDate)
+  const dayAfterDate = new Date(); dayAfterDate.setDate(dayAfterDate.getDate() + 2)
+  const dayAfter = localDateKey(dayAfterDate)
+
+  const dateWord = input.includes('сегодня') || input.includes('сейчас') ? today
+    : input.includes('послезавтра') ? dayAfter
+    : tomorrow
 
   const matchedTasks: ParsedTask[] = []
 
@@ -39,7 +47,7 @@ export function mockAIResponse(userInput: string): { text: string; tasks: Parsed
           points: template.points,
           timeStart: template.timeStart,
           timeEnd: template.timeEnd,
-          date: tomorrow,
+          date: dateWord,
           confirmed: false,
           editing: false,
         })
@@ -52,7 +60,7 @@ export function mockAIResponse(userInput: string): { text: string; tasks: Parsed
   ).slice(0, 3)
 
   const responseText = uniqueTasks.length > 0
-    ? 'ОТЛИЧНО, ВНЕСУ В СПИСОК ДЕЛ.'
+    ? (dateWord === today ? 'ОТЛИЧНО, ВНЕСУ В СПИСОК ДЕЛ НА СЕГОДНЯ.' : 'ОТЛИЧНО, ВНЕСУ В СПИСОК ДЕЛ НА ЗАВТРА.')
     : 'ПОНЯЛ. НАПИШИ КОНКРЕТНЕЕ: НАЗВАНИЕ, ВРЕМЯ, БАЛЛЫ.'
 
   return { text: responseText, tasks: uniqueTasks }

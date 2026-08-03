@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Send, CheckSquare2, Edit2 } from 'lucide-react'
 import { Button } from '../components/Button'
 import { Card } from '../components/Card'
@@ -7,6 +8,7 @@ import { TabBar } from '../components/TabBar'
 import { PageHeader } from '../components/PageHeader'
 import { useApp } from '../context/AppContext'
 import { mockAIResponse } from '../utils/aiMock'
+import { localDateKey } from '../utils/progression'
 
 interface Message {
   id: string
@@ -27,20 +29,24 @@ interface ParsedTask {
 }
 
 export function AIScreen() {
-  const { addTask } = useApp()
+  const { addTask, state } = useApp()
+  const navigate = useNavigate()
+
+  const aiDisabled = state.aiConfig.type === 'disabled'
 
   const [messages, setMessages] = useState<Message[]>([
     { id: '1', role: 'assistant', content: 'Напиши, что нужно сделать, и я добавлю в список дел.', timestamp: Date.now() - 1000 },
   ])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
+  const [drafts, setDrafts] = useState<Record<string, { title: string; points: number }>>({})
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  useEffect(() => { scrollToBottom() }, [messages])
+  useEffect(() => { scrollToBottom() }, [messages, sending])
 
   const handleSend = async () => {
-    if (!input.trim() || sending) return
+    if (!input.trim() || sending || aiDisabled) return
     const userMsg = input.trim()
     setInput('')
     setSending(true)
@@ -69,7 +75,7 @@ export function AIScreen() {
         points: task.points,
         timeStart: task.timeStart || '09:00',
         timeEnd: task.timeEnd || '10:00',
-        date: task.date || new Date().toISOString().split('T')[0],
+        date: task.date || localDateKey(new Date()),
         repeat: { type: 'none', daysOfWeek: [], endDate: '' },
         completed: false,
       })
@@ -80,15 +86,32 @@ export function AIScreen() {
   const handleEditTask = (msgId: string, taskIndex: number) => {
     setMessages(prev => prev.map(m => {
       if (m.id !== msgId || !m.tasks) return m
+      const task = m.tasks![taskIndex]
+      setDrafts(d => ({ ...d, [`${msgId}:${taskIndex}`]: { title: task.title, points: task.points } }))
       return { ...m, tasks: m.tasks!.map((t, i) => i === taskIndex ? { ...t, editing: true } : t) }
     }))
   }
 
-  const handleSaveEdit = (msgId: string, taskIndex: number, newTitle: string, newPoints: number) => {
+  const handleDraftChange = (msgId: string, taskIndex: number, patch: Partial<{ title: string; points: number }>) => {
+    setDrafts(d => ({ ...d, [`${msgId}:${taskIndex}`]: { ...(d[`${msgId}:${taskIndex}`] || { title: '', points: 0 }), ...patch } }))
+  }
+
+  const handleSaveEdit = (msgId: string, taskIndex: number) => {
+    const draft = drafts[`${msgId}:${taskIndex}`]
+    if (!draft || !draft.title.trim()) return
     setMessages(prev => prev.map(m => {
       if (m.id !== msgId || !m.tasks) return m
-      return { ...m, tasks: m.tasks!.map((t, i) => i === taskIndex ? { ...t, title: newTitle, points: newPoints, editing: false } : t) }
+      return { ...m, tasks: m.tasks!.map((t, i) => i === taskIndex ? { ...t, title: draft.title, points: draft.points, editing: false } : t) }
     }))
+    setDrafts(d => { const { [`${msgId}:${taskIndex}`]: _, ...rest } = d; return rest })
+  }
+
+  const handleCancelEdit = (msgId: string, taskIndex: number) => {
+    setMessages(prev => prev.map(m => {
+      if (m.id !== msgId || !m.tasks) return m
+      return { ...m, tasks: m.tasks!.map((t, i) => i === taskIndex ? { ...t, editing: false } : t) }
+    }))
+    setDrafts(d => { const { [`${msgId}:${taskIndex}`]: _, ...rest } = d; return rest })
   }
 
   return (
@@ -119,11 +142,11 @@ export function AIScreen() {
                   <div key={i} style={{ padding: '12px', borderBottom: i < msg.tasks!.length - 1 ? '0.5px solid var(--color-border)' : 'none' }}>
                     {task.editing ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        <Input value={task.title} onChange={e => handleSaveEdit(msg.id, i, e.target.value, task.points)} autoFocus />
-                        <Input label="Баллы" type="number" value={task.points} onChange={e => handleSaveEdit(msg.id, i, task.title, Number(e.target.value))} />
+                        <Input value={drafts[`${msg.id}:${i}`]?.title ?? task.title} onChange={e => handleDraftChange(msg.id, i, { title: e.target.value })} autoFocus aria-label="Название задачи" />
+                        <Input label="Баллы" type="number" value={drafts[`${msg.id}:${i}`]?.points ?? task.points} onChange={e => handleDraftChange(msg.id, i, { points: Number(e.target.value) })} aria-label="Баллы" />
                         <div style={{ display: 'flex', gap: 8 }}>
-                          <Button variant="primary" size="sm" onClick={() => handleSaveEdit(msg.id, i, task.title, task.points)}>Сохранить</Button>
-                          <Button variant="ghost" size="sm" onClick={() => setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, tasks: m.tasks!.map((t, j) => j === i ? { ...t, editing: false } : t) } : m))}>Отмена</Button>
+                          <Button variant="primary" size="sm" onClick={() => handleSaveEdit(msg.id, i)}>Сохранить</Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleCancelEdit(msg.id, i)}>Отмена</Button>
                         </div>
                       </div>
                     ) : (
@@ -154,25 +177,39 @@ export function AIScreen() {
             )}
           </div>
         ))}
+        {sending && (
+          <div style={{ alignSelf: 'flex-start', padding: '12px 16px', borderRadius: 'var(--radius)', background: 'var(--color-surface)', border: '0.5px solid var(--color-border)', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+            Ассистент набирает…
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </main>
 
-      <div style={{ padding: '16px', borderTop: '0.5px solid var(--color-border)', background: 'var(--color-surface)' }}>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <div style={{ flex: 1 }}>
-            <Input value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
-              placeholder="Напиши..."
-              aria-label="Сообщение"
-              disabled={sending}
-            />
+      {aiDisabled ? (
+        <div style={{ padding: '16px', borderTop: '0.5px solid var(--color-border)', background: 'var(--color-surface)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <span style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>ИИ-ассистент отключён в настройках</span>
+            <Button variant="secondary" size="sm" onClick={() => navigate('/settings')}>Настройки</Button>
           </div>
-          <Button variant="primary" size="md" onClick={handleSend} disabled={!input.trim() || sending} aria-label="Отправить">
-            <Send size={20} />
-          </Button>
         </div>
-      </div>
+      ) : (
+        <div style={{ padding: '16px', borderTop: '0.5px solid var(--color-border)', background: 'var(--color-surface)' }}>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <div style={{ flex: 1 }}>
+              <Input value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
+                placeholder="Напиши..."
+                aria-label="Сообщение"
+                disabled={sending}
+              />
+            </div>
+            <Button variant="primary" size="md" onClick={handleSend} disabled={!input.trim() || sending} aria-label="Отправить">
+              <Send size={20} />
+            </Button>
+          </div>
+        </div>
+      )}
 
       <TabBar />
     </div>

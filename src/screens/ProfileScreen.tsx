@@ -1,19 +1,23 @@
 import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Calendar, Target, Sparkles, Flame } from 'lucide-react'
 import { Avatar } from '../components/Avatar'
 import { Card } from '../components/Card'
 import { TabBar } from '../components/TabBar'
 import { PageHeader } from '../components/PageHeader'
 import { useApp } from '../context/AppContext'
+import { ROUTES } from '../constants/routes'
 import { LEVELS } from '../constants/levels'
-import { collectCompletedDates } from '../utils/progression'
+import { collectCompletedDates, localDateKey } from '../utils/progression'
 
 export function ProfileScreen() {
+  const navigate = useNavigate()
   const { state, getLevelProgress } = useApp()
   const { profile, selectedSkinId, skins, tasks } = state
   const currentSkin = skins.find(s => s.id === selectedSkinId)
   const progress = getLevelProgress()
   const nextLevel = LEVELS.find(l => l.level === profile.level + 1)
+  const hasActivity = useMemo(() => tasks.some(t => (t.repeat.type === 'none' && t.completed) || (t.completedDates && t.completedDates.length > 0)), [tasks])
 
   const activityData = useMemo(() => {
     const counts = new Map<string, number>()
@@ -25,7 +29,7 @@ export function ProfileScreen() {
     for (let i = 364; i >= 0; i--) {
       const d = new Date(today)
       d.setDate(d.getDate() - i)
-      const dateStr = d.toISOString().split('T')[0]
+      const dateStr = localDateKey(d)
       data.push({ date: dateStr, count: counts.get(dateStr) || 0 })
     }
     return data
@@ -37,7 +41,14 @@ export function ProfileScreen() {
 
       <main style={{ padding: '16px 16px 32px', flex: 1, overflow: 'auto' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: 20 }}>
-          <Avatar name={currentSkin?.name} size="xl" skinId={currentSkin?.preview} />
+          <button
+            onClick={() => navigate(ROUTES.CHARACTER)}
+            style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer', borderRadius: '50%' }}
+            aria-label="Перейти к персонажу"
+            title="Сменить персонажа"
+          >
+            <Avatar name={currentSkin?.name} size="xl" skinId={currentSkin?.preview} />
+          </button>
           <h2 style={{ marginTop: 12, fontSize: '18px', fontWeight: 600, color: 'var(--color-text)' }}>{profile.name}</h2>
 
           <div style={{ marginTop: 12, width: '100%', maxWidth: 280 }}>
@@ -72,7 +83,11 @@ export function ProfileScreen() {
         <Card>
           <div style={{ padding: 16 }}>
             <p style={{ fontSize: '11px', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Активность</p>
-            <ActivityHeatmap data={activityData} />
+            {hasActivity ? <ActivityHeatmap data={activityData} /> : (
+              <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', textAlign: 'center', padding: '20px 0' }}>
+                Пока нет активности
+              </p>
+            )}
           </div>
         </Card>
       </main>
@@ -110,7 +125,7 @@ function ActivityHeatmap({ data }: { data: { date: string; count: number }[] }) 
     if (d > today) break
     const dow = d.getDay() || 7
     if (dow === 1 && i > 0) { weeks.push(currentWeek); currentWeek = Array(7).fill(null) }
-    const dateStr = d.toISOString().split('T')[0]
+    const dateStr = localDateKey(d)
     currentWeek[dow - 1] = { date: dateStr, count: data.find(x => x.date === dateStr)?.count || 0 }
   }
   if (currentWeek.some(x => x)) weeks.push(currentWeek)

@@ -4,14 +4,16 @@ import { X } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { MENU_ITEMS, ROUTES } from '../constants/routes'
-import { Home, CheckSquare2, Bot, User, Sparkles, Trophy, Settings } from 'lucide-react'
+import { Home, CheckSquare2, Bot, User, BarChart3, GitFork, Trophy, Settings } from 'lucide-react'
 
 const iconMap: Record<string, React.ReactNode> = {
   [ROUTES.HOME]: <Home size={20} />,
   [ROUTES.TASKS]: <CheckSquare2 size={20} />,
   [ROUTES.AI]: <Bot size={20} />,
   [ROUTES.PROFILE]: <User size={20} />,
-  [ROUTES.CHARACTER]: <Sparkles size={20} />,
+  [ROUTES.STATS]: <BarChart3 size={20} />,
+  [ROUTES.CHARACTER]: <User size={20} />,
+  [ROUTES.EVOLUTION]: <GitFork size={20} />,
   [ROUTES.ACHIEVEMENTS]: <Trophy size={20} />,
   [ROUTES.SETTINGS]: <Settings size={20} />,
 }
@@ -77,7 +79,7 @@ function DrawerWindow({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
   if (!visible) return null
 
   return createPortal(
-    <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex' }} role="dialog" aria-modal="true">
+    <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex' }} role="dialog" aria-modal="true" aria-labelledby="drawer-title">
       <div style={{
         position: 'absolute', inset: 0, background: 'var(--overlay-bg)',
         transition: 'opacity 0.2s ease', opacity: animating ? 1 : 0,
@@ -95,7 +97,7 @@ function DrawerWindow({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
           paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)',
         }}>
           <div>
-            <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--color-text)', letterSpacing: '-0.3px' }}>
+            <h2 id="drawer-title" style={{ fontSize: '20px', fontWeight: 700, color: 'var(--color-text)', letterSpacing: '-0.3px' }}>
               {state.profile.name}
             </h2>
             <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: 2 }}>

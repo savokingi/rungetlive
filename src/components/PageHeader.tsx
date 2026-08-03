@@ -1,5 +1,6 @@
 import { ChevronLeft, Menu } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useDrawer } from './Drawer'
 
 interface PageHeaderProps {
@@ -10,9 +11,17 @@ interface PageHeaderProps {
 }
 
 export function PageHeader({ title, showBack = true, onBack, rightAction }: PageHeaderProps) {
+  const navigate = useNavigate()
   const { open: openDrawer } = useDrawer()
 
-  const handleClick = onBack || openDrawer
+  const canGoBack = window.history.length > 1 && showBack
+  const usesBack = onBack || canGoBack
+
+  const handleClick = onBack
+    ? onBack
+    : canGoBack
+      ? () => navigate(-1)
+      : openDrawer
 
   return (
     <header
@@ -31,7 +40,7 @@ export function PageHeader({ title, showBack = true, onBack, rightAction }: Page
           borderRadius: 'var(--radius)', border: 'none', background: 'transparent', cursor: 'pointer',
           color: 'var(--color-accent)', marginLeft: -8, flexShrink: 0,
         }}
-        aria-label={onBack ? 'Назад' : 'Меню'}
+        aria-label={usesBack ? 'Назад' : 'Меню'}
       >
         {showBack ? <ChevronLeft size={22} strokeWidth={2.5} /> : <Menu size={22} strokeWidth={2.5} />}
       </button>

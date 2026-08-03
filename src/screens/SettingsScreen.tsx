@@ -9,7 +9,7 @@ import { useApp } from '../context/AppContext'
 import { useTheme } from '../context/ThemeContext'
 import { AIConfig, ThemeMode, AccentColor } from '../types'
 import type { SettingsState } from '../context/AppContext'
-import { isCompletedOn } from '../utils/progression'
+import { isCompletedOn, localDateKey } from '../utils/progression'
 
 function downloadFile(content: string, filename: string, mime: string) {
   const blob = new Blob(['\ufeff' + content], { type: mime })
@@ -61,7 +61,7 @@ export function SettingsScreen() {
       t.date,
       `${t.timeStart}-${t.timeEnd}`,
       t.repeat.type,
-      isCompletedOn(t, new Date().toISOString().split('T')[0]) ? 'да' : 'нет',
+      isCompletedOn(t, localDateKey(new Date())) ? 'да' : 'нет',
     ].join(';'))
     downloadFile([header, ...rows].join('\r\n'), 'rungetlive-tasks.csv', 'text/csv')
   }

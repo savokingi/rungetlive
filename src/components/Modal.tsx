@@ -40,9 +40,10 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
 
   return createPortal(
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0, 0, 0, 0.6)',
+      position: 'fixed', inset: 0, background: 'var(--overlay-bg)',
       display: 'flex', alignItems: size === 'full' ? 'stretch' : 'center',
-      justifyContent: 'center', padding: 16, zIndex: 1000,
+      justifyContent: 'center', padding: 16,
+      paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))', zIndex: 1000,
     }} onClick={onClose} role="dialog" aria-modal="true" aria-labelledby={title ? 'modal-title' : undefined}>
       <div ref={trapRef} style={{
         background: 'var(--color-surface)', borderRadius: size === 'full' ? 0 : 14,

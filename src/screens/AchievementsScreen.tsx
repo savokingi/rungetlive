@@ -1,4 +1,4 @@
-import { Trophy, Lock, CheckCircle2, Target, Flame, Swords, Medal, Clock } from 'lucide-react'
+import { Trophy, Lock, CheckCircle2, Target, Flame, Swords, Medal, Clock, Star } from 'lucide-react'
 import { Card } from '../components/Card'
 import { TabBar } from '../components/TabBar'
 import { PageHeader } from '../components/PageHeader'
@@ -10,7 +10,10 @@ const iconMap: Record<string, React.ReactNode> = {
   flame: <Flame size={20} />,
   swords: <Swords size={20} />,
   medal: <Medal size={20} />,
+  clock: <Clock size={20} />,
   'check-circle': <CheckCircle2 size={20} />,
+  star: <Star size={20} />,
+  trophy: <Trophy size={20} />,
 }
 
 function currentValue(achievement: Achievement, profile: { tasksCompleted: number; streak: number; daysInGame: number; level: number }) {
@@ -49,6 +52,9 @@ export function AchievementsScreen() {
                 <div style={{ fontSize: '22px', fontWeight: 600, color: 'var(--color-text)' }}>{progress}%</div>
                 <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.3px', marginTop: 2 }}>Прогресс</div>
               </div>
+            </div>
+            <div style={{ marginTop: 14, height: 6, borderRadius: 3, background: 'var(--color-border)', overflow: 'hidden' }}>
+              <div style={{ width: `${progress}%`, height: '100%', borderRadius: 3, background: 'var(--color-accent)', transition: 'width 0.3s ease' }} />
             </div>
           </div>
         </Card>

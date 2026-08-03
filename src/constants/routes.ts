@@ -6,7 +6,6 @@ export const ROUTES = {
   STATS: '/stats',
   CHARACTER: '/character',
   EVOLUTION: '/evolution',
-  CUSTOMIZATION: '/customization',
   ACHIEVEMENTS: '/achievements',
   SETTINGS: '/settings',
 } as const

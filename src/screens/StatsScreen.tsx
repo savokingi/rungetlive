@@ -178,17 +178,31 @@ export function StatsScreen() {
             <p style={{ fontSize: '11px', fontWeight: 500, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: 12 }}>
               Активность за 12 недель
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexWrap: 'wrap', height: 66 }}>
-              {heatmap.map(c => (
-                <div key={c.date}
-                  title={`${c.date}: ${c.count} задач`}
-                  style={{
-                    width: 12, height: 12, borderRadius: 3,
-                    background: 'var(--color-accent)',
-                    opacity: levelOpacity(c.count),
-                  }} />
-              ))}
-            </div>
+            {activeDays === 0 ? (
+              <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', textAlign: 'center', padding: '20px 0' }}>
+                Пока нет активности — выполни первую задачу
+              </p>
+            ) : (
+              <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <div
+                  role="img"
+                  aria-label={`Активность за 12 недель: ${activeDays} активных дней`}
+                  style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 10px)', gridAutoRows: '10px', gap: 3, minWidth: 'max-content' }}
+                >
+                  {heatmap.map(c => (
+                    <div key={c.date}
+                      role="img"
+                      aria-label={`${c.date}: ${c.count} задач`}
+                      title={`${c.date}: ${c.count} задач`}
+                      style={{
+                        width: 10, height: 10, borderRadius: 2,
+                        background: 'var(--color-accent)',
+                        opacity: levelOpacity(c.count),
+                      }} />
+                  ))}
+                </div>
+              </div>
+            )}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, fontSize: 10, color: 'var(--color-text-muted)' }}>
               Меньше
               {[0, 1, 2, 4].map(l => (
@@ -212,7 +226,7 @@ export function StatsScreen() {
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text)' }}>Уровень {profile.level}</div>
                 <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', marginTop: 2 }}>
-                  {profile.totalXp} всего XP · {profile.xp} до следующего
+                  {profile.totalXp} всего XP · {profile.level >= 20 ? 'Максимальный уровень' : `Текущий XP: ${profile.xp}`}
                 </div>
               </div>
             </div>

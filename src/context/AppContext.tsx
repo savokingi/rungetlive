@@ -3,8 +3,8 @@ import {
   Task, UserProfile, LevelRequirement, Skin, AIConfig, Achievement,
   RepeatConfig, RepeatType
 } from '../types'
-import { LEVELS, getNextLevel } from '../constants/levels'
-import { collectCompletedDates, computeStreak, getDaysInGame } from '../utils/progression'
+import { LEVELS, calculateLevel } from '../constants/levels'
+import { collectCompletedDates, computeStreak, getDaysInGame, localDateKey } from '../utils/progression'
 
 export const STORAGE_KEY = 'rungetlive-state'
 
@@ -121,7 +121,7 @@ type AppAction =
   | { type: 'SET_SETTINGS'; payload: Partial<SettingsState> }
   | { type: 'RESET_STATE' }
 
-function loadInitialState(): AppState {
+function loadInitialState(fresh = false): AppState {
   const build = (parsed?: any): AppState => {
     const tasks: Task[] = Array.isArray(parsed?.tasks) ? parsed.tasks : []
     const profile = {
@@ -139,7 +139,7 @@ function loadInitialState(): AppState {
       aiConfig: typeof parsed?.aiConfig === 'object' ? { ...INITIAL_AI_CONFIG, ...parsed.aiConfig } : INITIAL_AI_CONFIG,
       achievements: Array.isArray(parsed?.achievements) ? parsed.achievements : INITIAL_ACHIEVEMENTS,
       selectedSkinId: typeof parsed?.selectedSkinId === 'string' ? parsed.selectedSkinId : 'default',
-      selectedDate: typeof parsed?.selectedDate === 'string' ? parsed.selectedDate : new Date().toISOString().split('T')[0],
+      selectedDate: typeof parsed?.selectedDate === 'string' ? parsed.selectedDate : localDateKey(new Date()),
       sidebarOpen: false,
       settings: {
         ...INITIAL_SETTINGS,
@@ -152,6 +152,7 @@ function loadInitialState(): AppState {
     }
   }
   try {
+    if (fresh) throw new Error()
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) throw new Error()
     const parsed = JSON.parse(raw)
@@ -184,54 +185,54 @@ function appReducer(state: AppState, action: AppAction): AppState {
       const task = state.tasks.find(t => t.id === id)
       if (!task) return state
 
+      // Symmetric toggle: checking earns XP, unchecking refunds it.
       let newTasks = state.tasks
-      let pointsGained = 0
+      let delta = task.points
 
       if (task.repeat.type === 'none') {
-        if (task.completed) return state
-        pointsGained = task.points
-        newTasks = state.tasks.map(t => t.id === id ? { ...t, completed: true } : t)
+        if (task.completed) {
+          newTasks = state.tasks.map(t => t.id === id ? { ...t, completed: false } : t)
+          delta = -task.points
+        } else {
+          newTasks = state.tasks.map(t => t.id === id ? { ...t, completed: true } : t)
+        }
       } else {
         const dates = task.completedDates || []
         if (dates.includes(date)) {
           newTasks = state.tasks.map(t => t.id === id ? { ...t, completedDates: dates.filter(d => d !== date) } : t)
+          delta = -task.points
         } else {
-          pointsGained = task.points
           newTasks = state.tasks.map(t => t.id === id ? { ...t, completedDates: [...dates, date] } : t)
         }
       }
 
-      const newTasksCompleted = state.profile.tasksCompleted + (pointsGained > 0 ? 1 : 0)
-      const newTotalXp = state.profile.totalXp + pointsGained
-      const newXp = state.profile.xp + pointsGained
+      const newTotalXp = Math.max(0, state.profile.totalXp + delta)
+      const newTasksCompleted = Math.max(
+        0,
+        state.profile.tasksCompleted + (delta > 0 ? 1 : -1)
+      )
+
+      // Recompute level from lifetime XP, supporting multi-level jumps.
+      const { level: newLevel, xp: newXp } = calculateLevel(newTotalXp, state.profile.daysInGame)
       const streak = computeStreak(collectCompletedDates(newTasks))
       const newMaxStreak = Math.max(state.profile.maxStreak, streak)
 
-      const nextLevel = getNextLevel(state.profile.level)
-      let newLevel = state.profile.level
-      let xpAfterLevel = newXp
-
-      if (nextLevel && newXp >= nextLevel.xpRequired && state.profile.daysInGame >= nextLevel.daysRequired) {
-        newLevel = nextLevel.level
-        xpAfterLevel = 0
-      }
-
-      const newAchievements = state.achievements
-
+      // Unlock skins by the reached level; auto-select only when a brand-new
+      // highest-tier skin appears, without overriding themed picks.
       let newSkins = state.skins
       let newSelectedSkinId = state.selectedSkinId
       if (newLevel !== state.profile.level) {
-        const skinToSelect = [...state.skins]
+        const byLevel = [...state.skins]
           .filter((s): s is Skin & { unlockLevel: number } => typeof s.unlockLevel === 'number')
           .filter(s => s.unlockLevel <= newLevel)
-          .sort((a, b) => b.unlockLevel - a.unlockLevel)[0]
-        if (skinToSelect && skinToSelect.id !== state.selectedSkinId) {
-          newSelectedSkinId = skinToSelect.id
-          if (!skinToSelect.unlocked) {
-            newSkins = state.skins.map(s =>
-              s.id === skinToSelect.id ? { ...s, unlocked: true } : s
-            )
-          }
+        const newlyUnlocked = byLevel.filter(s => !s.unlocked)
+        newSkins = state.skins.map(s =>
+          byLevel.some(t => t.id === s.id) ? { ...s, unlocked: true } : s
+        )
+        const bestNew = newlyUnlocked.sort((a, b) => b.unlockLevel - a.unlockLevel)[0]
+        const currentIsLevelSkin = state.skins.find(s => s.id === state.selectedSkinId)?.unlockLevel !== undefined
+        if (bestNew && currentIsLevelSkin) {
+          newSelectedSkinId = bestNew.id
         }
       }
 
@@ -240,17 +241,18 @@ function appReducer(state: AppState, action: AppAction): AppState {
         tasks: newTasks,
         profile: {
           ...state.profile,
-          xp: xpAfterLevel,
+          xp: newXp,
           totalXp: newTotalXp,
           tasksCompleted: newTasksCompleted,
-          totalPointsEarned: state.profile.totalPointsEarned + pointsGained,
+          totalPointsEarned: newTotalXp,
           level: newLevel,
           streak,
           maxStreak: newMaxStreak,
+          currentSkin: newSelectedSkinId,
         },
         skins: newSkins,
         selectedSkinId: newSelectedSkinId,
-        achievements: newAchievements,
+        achievements: state.achievements,
       }
     }
 
@@ -274,7 +276,12 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, skins: state.skins.map(s => s.id === action.payload ? { ...s, unlocked: true } : s) }
 
     case 'UNLOCK_ACHIEVEMENT':
-      return { ...state, achievements: state.achievements.map(a => a.id === action.payload ? { ...a, unlocked: true, unlockedAt: Date.now() } : a) }
+      return {
+        ...state,
+        achievements: state.achievements.map(a =>
+          a.id === action.payload && !a.unlocked ? { ...a, unlocked: true, unlockedAt: Date.now() } : a
+        ),
+      }
 
     case 'LEVEL_UP':
       return { ...state, profile: { ...state.profile, level: action.payload, xp: 0 } }
@@ -296,7 +303,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
       }
 
     case 'RESET_STATE':
-      return loadInitialState()
+      return loadInitialState(true)
 
     default:
       return state
@@ -317,24 +324,26 @@ function buildTasksIndex(tasks: Task[]): TasksIndex {
     const dates = new Set<string>()
     dates.add(t.date)
     const start = new Date(t.date + 'T00:00:00')
-    const end = new Date(t.date + 'T00:00:00')
+    let limit: number
     if (t.repeat.endDate) {
-      end.setTime(new Date(t.repeat.endDate + 'T00:00:00').getTime())
+      limit = new Date(t.repeat.endDate + 'T00:00:00').getTime()
     } else {
-      end.setDate(end.getDate() + 90)
+      const horizon = new Date()
+      horizon.setDate(horizon.getDate() + 730)
+      limit = Math.max(start.getTime(), horizon.getTime())
     }
-    const limit = Math.max(start.getTime(), end.getTime())
+    const maxLimit = Math.max(start.getTime(), limit)
     if (t.repeat.type === 'daily') {
       const d = new Date(start)
-      while (d.getTime() <= limit) {
-        dates.add(d.toISOString().split('T')[0])
+      while (d.getTime() <= maxLimit) {
+        dates.add(localDateKey(d))
         d.setDate(d.getDate() + 1)
       }
     } else if (t.repeat.type === 'weekly' && t.repeat.daysOfWeek) {
       const d = new Date(start)
-      while (d.getTime() <= limit) {
+      while (d.getTime() <= maxLimit) {
         if (t.repeat.daysOfWeek!.includes(d.getDay() === 0 ? 7 : d.getDay())) {
-          dates.add(d.toISOString().split('T')[0])
+          dates.add(localDateKey(d))
         }
         d.setDate(d.getDate() + 1)
       }
@@ -355,14 +364,14 @@ interface AppContextType {
   dispatch: Dispatch<AppAction>
   addTask: (task: Omit<Task, 'id' | 'createdAt'>) => void
   getTasksForDate: (date: string) => Task[]
-  getLevelProgress: () => { current: number; required: number; percent: number }
+  getLevelProgress: () => { current: number; required: number; percent: number; canLevelUp: boolean; nextLevel: number }
   checkAchievements: () => void
 }
 
 const AppContext = createContext<AppContextType | null>(null)
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(appReducer, null, loadInitialState)
+  const [state, dispatch] = useReducer(appReducer, null, () => loadInitialState())
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   useEffect(() => {
@@ -370,6 +379,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)) } catch { }
     }, 300)
     return () => clearTimeout(id)
+  }, [state])
+
+  useEffect(() => {
+    const flush = () => {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)) } catch { }
+    }
+    window.addEventListener('beforeunload', flush)
+    window.addEventListener('pagehide', flush)
+    return () => {
+      window.removeEventListener('beforeunload', flush)
+      window.removeEventListener('pagehide', flush)
+    }
   }, [state])
 
   const indexRef = useRef<TasksIndex>({ getForDate: () => [] })
@@ -385,11 +406,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const getLevelProgress = useCallback(() => {
     const nextLevel = LEVELS.find(l => l.level === state.profile.level + 1)
-    if (!nextLevel) return { current: state.profile.xp, required: 0, percent: 100 }
+    if (!nextLevel) return { current: state.profile.xp, required: 0, percent: 100, canLevelUp: false, nextLevel: state.profile.level }
+    const canLevelUp =
+      state.profile.xp >= nextLevel.xpRequired &&
+      state.profile.daysInGame >= nextLevel.daysRequired
     return {
       current: state.profile.xp,
       required: nextLevel.xpRequired,
       percent: Math.min(100, (state.profile.xp / nextLevel.xpRequired) * 100),
+      canLevelUp,
+      nextLevel: nextLevel.level,
     }
   }, [state.profile])
 

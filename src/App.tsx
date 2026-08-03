@@ -36,8 +36,8 @@ function App() {
                 <Route path={ROUTES.SETTINGS} element={<SettingsScreen />} />
                 <Route path={ROUTES.CHARACTER} element={<CharacterScreen />} />
                 <Route path={ROUTES.EVOLUTION} element={<EvolutionScreen />} />
-                <Route path={ROUTES.CUSTOMIZATION} element={<Navigate to={ROUTES.CHARACTER} replace />} />
                 <Route path={ROUTES.ACHIEVEMENTS} element={<AchievementsScreen />} />
+                <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
               </Routes>
             </Suspense>
           </ErrorBoundary>

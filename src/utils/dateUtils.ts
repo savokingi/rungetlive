@@ -1,3 +1,5 @@
+import { localDateKey } from './progression'
+
 export function formatDateRu(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00')
   return d.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' })
@@ -17,7 +19,7 @@ export function generateWeekDates(selectedDate: string): string[] {
   for (let i = 0; i < 7; i++) {
     const date = new Date(start)
     date.setDate(start.getDate() + i)
-    dates.push(date.toISOString().split('T')[0])
+    dates.push(localDateKey(date))
   }
   return dates
 }
@@ -35,7 +37,7 @@ export function generateMonthDates(baseDate: string): string[] {
   for (let i = 0; i < 42; i++) {
     const date = new Date(start)
     date.setDate(start.getDate() + i)
-    dates.push(date.toISOString().split('T')[0])
+    dates.push(localDateKey(date))
   }
   return dates
 }
