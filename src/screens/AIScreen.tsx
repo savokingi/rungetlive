@@ -8,6 +8,7 @@ import { TabBar } from '../components/TabBar'
 import { PageHeader } from '../components/PageHeader'
 import { useApp } from '../context/AppContext'
 import { mockAIResponse } from '../utils/aiMock'
+import { askGemini } from '../utils/gemini'
 import { localDateKey } from '../utils/progression'
 
 interface Message {
@@ -53,17 +54,31 @@ export function AIScreen() {
 
     setMessages(prev => [...prev, { id: Date.now().toString(), role: 'user', content: userMsg, timestamp: Date.now() }])
 
-    setTimeout(() => {
-      const { text, tasks } = mockAIResponse(userMsg)
+    const patchReplied = (assistantText: string, tasks: Omit<ParsedTask, 'confirmed' | 'editing'>[]) => {
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: text,
+        content: assistantText,
         tasks: tasks.map(t => ({ ...t, confirmed: false, editing: false })),
         timestamp: Date.now(),
       }])
       setSending(false)
-    }, 800)
+    }
+
+    const mock = mockAIResponse(userMsg)
+    const geminiKey = state.aiConfig.type === 'custom' && state.aiConfig.customApiKey ? state.aiConfig.customApiKey : ''
+
+    if (!geminiKey) {
+      setTimeout(() => patchReplied(mock.text, mock.tasks), 800)
+      return
+    }
+
+    try {
+      const result = await askGemini(userMsg, geminiKey)
+      patchReplied(result.text, result.tasks)
+    } catch (err) {
+      patchReplied('Не удалось связаться с Gemini: ' + (err instanceof Error ? err.message : 'ошибка сети') + '. Использую локальный режим.', mock.tasks)
+    }
   }
 
   const handleConfirmTask = (msgId: string, taskIndex: number) => {

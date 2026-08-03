@@ -88,9 +88,9 @@ export function SettingsScreen() {
   ]
 
   const aiProviderOptions = [
-    { value: 'subscription', label: 'По подписке (мой API)', icon: <Shield size={18} /> },
-    { value: 'custom', label: 'Свой API-ключ', icon: <Key size={18} /> },
-    { value: 'disabled', label: 'Отключить ИИ', icon: <Bot size={18} /> },
+    { value: 'custom', label: 'Gemini (свой API-ключ)', icon: <Key size={18} /> },
+    { value: 'subscription', label: 'Локальный режим (без ключа)', icon: <Bot size={18} /> },
+    { value: 'disabled', label: 'Отключить ИИ', icon: <Shield size={18} /> },
   ]
 
   return (
@@ -171,8 +171,10 @@ export function SettingsScreen() {
               ))}
               {aiConfig.type === 'custom' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8, paddingLeft: 48 }}>
-                  <Input label="API Key" type="password" value={aiConfig.customApiKey} onChange={e => handleAiChange('customApiKey', e.target.value)} placeholder="sk-..." />
-                  <Input label="Base URL (опционально)" value={aiConfig.customBaseUrl} onChange={e => handleAiChange('customBaseUrl', e.target.value)} placeholder="https://api.openai.com/v1" />
+                  <Input label="API Key (Gemini)" type="password" value={aiConfig.customApiKey} onChange={e => handleAiChange('customApiKey', e.target.value)} placeholder="AIza..." />
+                  <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', margin: 0 }}>
+                    Запросы идут напрямую в Google из браузера. Ключ хранится только на вашем устройстве.
+                  </p>
                 </div>
               )}
             </div>
