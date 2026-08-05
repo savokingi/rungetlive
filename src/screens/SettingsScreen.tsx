@@ -1,11 +1,12 @@
-import { useState } from 'react'
-import { Moon, Sun, Bot, Key, Shield, Bell, Globe, Music, Download, RefreshCw, Info, Palette } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Moon, Sun, Key, Shield, Bell, Music, Download, Upload, RefreshCw, Info } from 'lucide-react'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
 import { Input } from '../components/Input'
+import { Modal } from '../components/Modal'
 import { PageHeader } from '../components/PageHeader'
 import { TabBar } from '../components/TabBar'
-import { useApp } from '../context/AppContext'
+import { useApp, STORAGE_KEY } from '../context/AppContext'
 import { useTheme } from '../context/ThemeContext'
 import { AIConfig, ThemeMode, AccentColor } from '../types'
 import type { SettingsState } from '../context/AppContext'
@@ -30,12 +31,57 @@ export function SettingsScreen() {
   const [aiConfig, setAiConfig] = useState<AIConfig>(state.aiConfig)
   const { settings } = state
 
+  const [pendingImport, setPendingImport] = useState<any>(null)
+  const [importError, setImportError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const setSetting = (patch: Partial<SettingsState>) => dispatch({ type: 'SET_SETTINGS', payload: patch })
 
   const handleAiChange = (key: keyof AIConfig, value: any) => {
     const newConfig = { ...aiConfig, [key]: value }
     setAiConfig(newConfig)
     dispatch({ type: 'SET_AI_CONFIG', payload: newConfig })
+  }
+
+  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(String(reader.result))
+        if (!data || typeof data !== 'object' || !Array.isArray(data.tasks)) {
+          throw new Error('Неверный формат файла')
+        }
+        setPendingImport(data)
+        setImportError(null)
+      } catch {
+        setImportError('Не удалось прочитать файл: это не корректный экспорт RunGetLive.')
+      }
+    }
+    reader.readAsText(file)
+  }
+
+  const handleConfirmImport = () => {
+    const data = pendingImport
+    if (!data) return
+    const patch: Record<string, unknown> = {}
+    if (data.profile) patch.profile = data.profile
+    if (Array.isArray(data.tasks)) patch.tasks = data.tasks
+    if (Array.isArray(data.achievements)) patch.achievements = data.achievements
+    if (Array.isArray(data.skins)) patch.skins = data.skins
+    if (data.aiConfig) patch.aiConfig = data.aiConfig
+    if (typeof data.selectedSkinId === 'string') patch.selectedSkinId = data.selectedSkinId
+    dispatch({ type: 'LOAD', payload: patch })
+    try {
+      const merged = { ...state, ...patch }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged))
+    } catch { }
+    setAiConfig({ ...aiConfig, ...(data.aiConfig || {}) })
+    setPendingImport(null)
+    setImportError('Данные импортированы.')
+    setTimeout(() => setImportError(null), 4000)
   }
 
   const handleExportJson = () => {
@@ -89,7 +135,6 @@ export function SettingsScreen() {
 
   const aiProviderOptions = [
     { value: 'custom', label: 'Gemini (свой API-ключ)', icon: <Key size={18} /> },
-    { value: 'subscription', label: 'Локальный режим (без ключа)', icon: <Bot size={18} /> },
     { value: 'disabled', label: 'Отключить ИИ', icon: <Shield size={18} /> },
   ]
 
@@ -226,12 +271,37 @@ export function SettingsScreen() {
                 <Button variant="secondary" size="sm" onClick={handleExportCsv}>CSV</Button>
               </div>
             } />
+            <SettingItem icon={<Upload size={20} />} label="Импорт из JSON" trailing={
+              <Button variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()}>Выбрать файл</Button>
+            } />
             <SettingItem icon={<RefreshCw size={20} />} label="Сброс прогресса" variant="danger"
               trailing={<Button variant="danger" size="sm" onClick={handleReset}>Сбросить</Button>} />
             <SettingItem icon={<Info size={20} />} label="О приложении" trailing={<span style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>v0.1.0</span>} />
           </div>
         </Card>
+
+        {importError && (
+          <p style={{
+            marginTop: 12, fontSize: '13px', textAlign: 'center',
+            color: 'var(--color-accent)', padding: '8px 12px',
+            background: 'var(--color-accent-light)', borderRadius: 'var(--radius-sm)',
+          }}>{importError}</p>
+        )}
       </main>
+
+      <input ref={fileInputRef} type="file" accept="application/json,.json" onChange={handleFileSelected} style={{ display: 'none' }} aria-hidden="true" tabIndex={-1} />
+
+      <Modal isOpen={pendingImport !== null} onClose={() => setPendingImport(null)} title="Импорт данных">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+            Текущий прогресс будет заменён данными из файла. Продолжить?
+          </p>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <Button variant="secondary" type="button" onClick={() => setPendingImport(null)} flex={1}>Отмена</Button>
+            <Button variant="primary" type="button" onClick={handleConfirmImport} flex={1}>Импортировать</Button>
+          </div>
+        </div>
+      </Modal>
 
       <TabBar />
     </div>

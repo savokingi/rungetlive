@@ -1,8 +1,9 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Calendar, Target, Sparkles, Flame } from 'lucide-react'
+import { Calendar, Target, Sparkles, Flame, Pencil } from 'lucide-react'
 import { Avatar } from '../components/Avatar'
 import { Card } from '../components/Card'
+import { Input } from '../components/Input'
 import { TabBar } from '../components/TabBar'
 import { PageHeader } from '../components/PageHeader'
 import { useApp } from '../context/AppContext'
@@ -12,11 +13,13 @@ import { collectCompletedDates, localDateKey } from '../utils/progression'
 
 export function ProfileScreen() {
   const navigate = useNavigate()
-  const { state, getLevelProgress } = useApp()
+  const { state, getLevelProgress, dispatch } = useApp()
   const { profile, selectedSkinId, skins, tasks } = state
   const currentSkin = skins.find(s => s.id === selectedSkinId)
   const progress = getLevelProgress()
   const nextLevel = LEVELS.find(l => l.level === profile.level + 1)
+  const [editingName, setEditingName] = useState(false)
+  const [nameDraft, setNameDraft] = useState(profile.name)
   const hasActivity = useMemo(() => tasks.some(t => (t.repeat.type === 'none' && t.completed) || (t.completedDates && t.completedDates.length > 0)), [tasks])
 
   const activityData = useMemo(() => {
@@ -49,7 +52,32 @@ export function ProfileScreen() {
           >
             <Avatar name={currentSkin?.name} size="xl" skinId={currentSkin?.preview} />
           </button>
-          <h2 style={{ marginTop: 12, fontSize: '18px', fontWeight: 600, color: 'var(--color-text)' }}>{profile.name}</h2>
+          {editingName ? (
+            <div style={{ marginTop: 12, width: '100%', maxWidth: 280 }}>
+              <Input
+                value={nameDraft}
+                onChange={e => setNameDraft(e.target.value)}
+                onBlur={() => { setEditingName(false); const name = nameDraft.trim(); if (name && name !== profile.name) dispatch({ type: 'SET_PROFILE', payload: { name } }) }}
+                onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') { setNameDraft(profile.name); setEditingName(false) } }}
+                autoFocus
+                aria-label="Имя игрока"
+                maxLength={30}
+              />
+            </div>
+          ) : (
+            <button
+              onClick={() => { setNameDraft(profile.name); setEditingName(true) }}
+              style={{
+                marginTop: 12, display: 'flex', alignItems: 'center', gap: 8,
+                background: 'transparent', border: 'none', cursor: 'pointer', padding: 0,
+              }}
+              aria-label="Изменить имя"
+              title="Изменить имя"
+            >
+              <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--color-text)' }}>{profile.name}</h2>
+              <Pencil size={14} color="var(--color-text-secondary)" />
+            </button>
+          )}
 
           <div style={{ marginTop: 12, width: '100%', maxWidth: 280 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>

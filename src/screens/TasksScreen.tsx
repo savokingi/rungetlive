@@ -8,6 +8,7 @@ import { TabBar } from '../components/TabBar'
 import { PageHeader } from '../components/PageHeader'
 import { useApp } from '../context/AppContext'
 import { Task, RepeatConfig } from '../types'
+import { TASK_TEMPLATES } from '../constants/taskTemplates'
 import { isCompletedOn, localDateKey } from '../utils/progression'
 
 export function TasksScreen() {
@@ -140,6 +141,23 @@ export function TasksScreen() {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }} noValidate>
           <Input label="Название" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
             placeholder="Например: Уборка" required error={formErrors.title} />
+          {!editingTask && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {TASK_TEMPLATES.map(tpl => {
+                const active = form.title === tpl.title
+                return (
+                  <button key={tpl.title} type="button" onClick={() => setForm({ ...form, title: tpl.title, points: tpl.points, timeStart: tpl.timeStart, timeEnd: tpl.timeEnd })}
+                    style={{
+                      padding: '6px 12px', borderRadius: '9999px', border: '0.5px solid var(--color-border)', cursor: 'pointer',
+                      background: active ? 'var(--color-accent-light)' : 'var(--color-surface)',
+                      color: active ? 'var(--color-accent)' : 'var(--color-text)',
+                      fontSize: '12px', fontWeight: 500, transition: 'var(--transition)',
+                    }}
+                  >{tpl.title} · {tpl.points}</button>
+                )
+              })}
+            </div>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <Input label="Баллы" type="number" min="1" max="1000" value={form.points}
               onChange={e => setForm({ ...form, points: e.target.value === '' ? 0 : Number(e.target.value) })}

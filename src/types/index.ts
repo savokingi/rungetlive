@@ -43,7 +43,7 @@ export interface UserProfile {
 }
 
 export interface AIConfig {
-  type: 'subscription' | 'custom' | 'disabled'
+  type: 'custom' | 'disabled'
   customApiKey: string
   customBaseUrl: string
 }

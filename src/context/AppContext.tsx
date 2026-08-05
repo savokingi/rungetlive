@@ -1,10 +1,10 @@
 import { createContext, useContext, useReducer, useEffect, useCallback, useRef, type ReactNode, type Dispatch } from 'react'
 import {
-  Task, UserProfile, LevelRequirement, Skin, AIConfig, Achievement,
-  RepeatConfig, RepeatType
+  Task, UserProfile, Skin, AIConfig, Achievement,
+  RepeatConfig
 } from '../types'
 import { LEVELS, calculateLevel } from '../constants/levels'
-import { collectCompletedDates, computeStreak, getDaysInGame, localDateKey } from '../utils/progression'
+import { collectCompletedDates, computeStreak, getDaysInGame, isCompletedOn, localDateKey } from '../utils/progression'
 
 export const STORAGE_KEY = 'rungetlive-state'
 
@@ -61,7 +61,7 @@ const INITIAL_SKINS: Skin[] = [
   { id: 'astronaut', name: 'Астронавт', preview: 'rocket', unlockAchievement: 'max_level', unlocked: false },
 ]
 
-const INITIAL_AI_CONFIG: AIConfig = { type: 'subscription', customApiKey: '', customBaseUrl: '' }
+const INITIAL_AI_CONFIG: AIConfig = { type: 'custom', customApiKey: '', customBaseUrl: '' }
 
 const INITIAL_ACHIEVEMENTS: Achievement[] = [
   { id: 'first_task', name: 'Первый шаг', title: 'Первый шаг', description: 'Выполни 1 задачу', icon: 'target', kind: 'tasks', target: 1, unlocked: false, unlockedAt: null },
@@ -116,7 +116,6 @@ type AppAction =
   | { type: 'SET_AI_CONFIG'; payload: AIConfig }
   | { type: 'UNLOCK_SKIN'; payload: string }
   | { type: 'UNLOCK_ACHIEVEMENT'; payload: string }
-  | { type: 'LEVEL_UP'; payload: number }
   | { type: 'SET_SIDEBAR'; payload: boolean }
   | { type: 'SET_SETTINGS'; payload: Partial<SettingsState> }
   | { type: 'RESET_STATE' }
@@ -136,7 +135,13 @@ function loadInitialState(fresh = false): AppState {
       profile,
       tasks,
       skins: Array.isArray(parsed?.skins) ? parsed.skins : INITIAL_SKINS,
-      aiConfig: typeof parsed?.aiConfig === 'object' ? { ...INITIAL_AI_CONFIG, ...parsed.aiConfig } : INITIAL_AI_CONFIG,
+      aiConfig: typeof parsed?.aiConfig === 'object'
+        ? {
+          ...INITIAL_AI_CONFIG,
+          ...parsed.aiConfig,
+          type: ['custom', 'disabled'].includes(parsed.aiConfig.type) ? parsed.aiConfig.type : 'custom',
+        }
+        : INITIAL_AI_CONFIG,
       achievements: Array.isArray(parsed?.achievements) ? parsed.achievements : INITIAL_ACHIEVEMENTS,
       selectedSkinId: typeof parsed?.selectedSkinId === 'string' ? parsed.selectedSkinId : 'default',
       selectedDate: typeof parsed?.selectedDate === 'string' ? parsed.selectedDate : localDateKey(new Date()),
@@ -265,7 +270,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_AI_CONFIG': {
       const cfg = action.payload
       const valid: AIConfig = {
-        type: ['subscription', 'custom', 'disabled'].includes(cfg.type) ? cfg.type : 'disabled',
+        type: ['custom', 'disabled'].includes(cfg.type) ? cfg.type : 'disabled',
         customApiKey: typeof cfg.customApiKey === 'string' ? cfg.customApiKey.slice(0, 200) : '',
         customBaseUrl: typeof cfg.customBaseUrl === 'string' ? cfg.customBaseUrl.slice(0, 500) : '',
       }
@@ -282,9 +287,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
           a.id === action.payload && !a.unlocked ? { ...a, unlocked: true, unlockedAt: Date.now() } : a
         ),
       }
-
-    case 'LEVEL_UP':
-      return { ...state, profile: { ...state.profile, level: action.payload, xp: 0 } }
 
     case 'SET_SIDEBAR':
       return { ...state, sidebarOpen: action.payload }
@@ -438,6 +440,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     })
   }, [state.profile.level, state.achievements])
+
+  const lastReminderDate = useRef('')
+  useEffect(() => {
+    if (!state.settings.notifications.enabled) return
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => { })
+    }
+    const check = () => {
+      try {
+        if (!('Notification' in window) || Notification.permission !== 'granted') return
+        const now = new Date()
+        const [h, m] = state.settings.notifications.time.split(':').map(Number)
+        const todayKey = localDateKey(now)
+        if (now.getHours() < h || (now.getHours() === h && now.getMinutes() < m)) return
+        if (lastReminderDate.current === todayKey) return
+        const pending = indexRef.current.getForDate(todayKey).filter(t => !isCompletedOn(t, todayKey))
+        if (pending.length === 0) return
+        const done = state.tasks.length - pending.length
+        const notification = new Notification('RunGetLive', {
+          body: `Осталось задач: ${pending.length}${state.tasks.length > 0 ? ` (выполнено ${done})` : ''}. Загляни в список дел!`,
+          tag: 'daily-reminder',
+        })
+        notification.onclick = () => { window.focus() }
+        lastReminderDate.current = todayKey
+      } catch { }
+    }
+    check()
+    const id = setInterval(check, 30000)
+    return () => clearInterval(id)
+  }, [state.settings.notifications.enabled, state.settings.notifications.time, state.tasks.length])
 
   return (
     <AppContext.Provider value={{ state, dispatch, addTask, getTasksForDate, getLevelProgress, checkAchievements }}>

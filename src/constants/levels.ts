@@ -27,20 +27,6 @@ export function getNextLevel(currentLevel: number): LevelRequirement | undefined
   return LEVELS.find(l => l.level === currentLevel + 1)
 }
 
-export function getLevelProgress(xp: number, daysInGame: number, currentLevel: number) {
-  const next = getNextLevel(currentLevel)
-  if (!next) return { current: xp, required: 0, percent: 100 }
-
-  const canLevelUp = xp >= next.xpRequired && daysInGame >= next.daysRequired
-  return {
-    current: xp,
-    required: next.xpRequired,
-    percent: Math.min(100, (xp / next.xpRequired) * 100),
-    canLevelUp,
-    nextLevel: next.level,
-  }
-}
-
 export function calculateLevel(xp: number, daysInGame: number): { level: number; xp: number } {
   let level = 1
   let remainingXp = xp
