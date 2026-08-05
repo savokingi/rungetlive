@@ -4,12 +4,23 @@ import { Avatar } from '../components/Avatar'
 import { TabBar } from '../components/TabBar'
 import { PageHeader } from '../components/PageHeader'
 import { useApp } from '../context/AppContext'
+import { useToast } from '../context/ToastContext'
 import { getNextLevel } from '../constants/levels'
 import { CHARACTER_MAP } from '../components/CharacterSVG'
+import type { Achievement } from '../types'
 
 function renderPreview(preview?: string) {
   const C = preview ? CHARACTER_MAP[preview] : undefined
   return C ? <C size={44} animated /> : null
+}
+
+function achievementCurrent(achievement: Achievement, profile: { tasksCompleted: number; streak: number; daysInGame: number; level: number }): number {
+  switch (achievement.kind) {
+    case 'tasks': return profile.tasksCompleted
+    case 'streak': return profile.streak
+    case 'days': return profile.daysInGame
+    case 'level': return profile.level
+  }
 }
 
 function LevelProgress({ current, required }: { current: number; required: number }) {
@@ -27,6 +38,7 @@ function LevelProgress({ current, required }: { current: number; required: numbe
 
 export function CharacterScreen() {
   const { state, dispatch } = useApp()
+  const { showToast } = useToast()
   const { skins, profile, selectedSkinId } = state
   const currentSkin = skins.find(s => s.id === selectedSkinId)
   const nextLevel = getNextLevel(profile.level)
@@ -58,7 +70,7 @@ export function CharacterScreen() {
                 </span>
               )}
             </div>
-            <LevelProgress current={profile.xp} required={nextLevel?.xpRequired ?? 0} />
+            {!isMaxLevel && <LevelProgress current={profile.xp} required={nextLevel?.xpRequired ?? 0} />}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
               <Calendar size={14} strokeWidth={1.5} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
               <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>
@@ -82,19 +94,30 @@ export function CharacterScreen() {
                 const unlockAchievement = skin.unlockAchievement
                   ? state.achievements.find(a => a.id === skin.unlockAchievement)
                   : null
+                const lockHint = typeof skin.unlockLevel === 'number'
+                  ? `Откроется на ${skin.unlockLevel} уровне`
+                  : unlockAchievement
+                    ? `Нужно достижение «${unlockAchievement.name}»`
+                    : 'Заблокирован'
                 return (
                   <button key={skin.id}
-                    onClick={() => { if (isUnlocked) dispatch({ type: 'SET_SKIN', payload: skin.id }) }}
-                    disabled={!isUnlocked}
+                    onClick={() => {
+                      if (isUnlocked) {
+                        dispatch({ type: 'SET_SKIN', payload: skin.id })
+                        showToast(`Персонаж: ${skin.name}`, 'success')
+                      } else {
+                        showToast(lockHint)
+                      }
+                    }}
                     style={{
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
                       padding: '12px', borderRadius: 'var(--radius-sm)',
                       border: `0.5px solid ${isCurrent ? 'var(--color-accent)' : 'var(--color-border)'}`,
                       background: isCurrent ? 'var(--color-accent-light)' : 'var(--color-surface)',
-                      opacity: isUnlocked ? 1 : 0.4,
-                      cursor: isUnlocked ? 'pointer' : 'not-allowed',
+                      opacity: isUnlocked ? 1 : 0.55,
+                      cursor: 'pointer',
                       transition: 'var(--transition)',
-                    }} aria-pressed={isCurrent} aria-disabled={!isUnlocked}
+                    }} aria-pressed={isCurrent}
                   >
                     <div style={{
                       width: 56, height: 56, borderRadius: '50%',
@@ -108,11 +131,13 @@ export function CharacterScreen() {
                       {isCurrent && <Check size={12} style={{ position: 'absolute', bottom: -2, right: -2, color: 'var(--color-accent)' }} />}
                     </div>
                     <span style={{ fontSize: '12px', fontWeight: 500, color: isUnlocked ? 'var(--color-text)' : 'var(--color-text-muted)' }}>{skin.name}</span>
-                    <span style={{ fontSize: '10px', color: isUnlocked ? 'var(--color-text-muted)' : 'var(--color-text-secondary)' }}>
+                    <span style={{ fontSize: '10px', color: isUnlocked ? 'var(--color-text-muted)' : 'var(--color-text-secondary)', textAlign: 'center' }}>
                       {isUnlocked ? (isCurrent ? 'Выбран' : 'Доступен') : (
                         typeof skin.unlockLevel === 'number'
                           ? `Ур. ${skin.unlockLevel}`
-                          : unlockAchievement ? unlockAchievement.name : 'За достижение'
+                          : unlockAchievement
+                            ? `Достижение: ${achievementCurrent(unlockAchievement, profile)}/${unlockAchievement.target}`
+                            : 'За достижение'
                       )}
                     </span>
                   </button>

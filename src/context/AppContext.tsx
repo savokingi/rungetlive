@@ -5,24 +5,22 @@ import {
 } from '../types'
 import { LEVELS, calculateLevel } from '../constants/levels'
 import { collectCompletedDates, computeStreak, getDaysInGame, isCompletedOn, localDateKey } from '../utils/progression'
+import { useToast } from './ToastContext'
 
 export const STORAGE_KEY = 'rungetlive-state'
 
 export interface SettingsState {
   notifications: { enabled: boolean; time: string }
   sounds: boolean
-  language: 'ru' | 'en'
 }
 
 const INITIAL_SETTINGS: SettingsState = {
   notifications: { enabled: true, time: '09:00' },
   sounds: true,
-  language: 'ru',
 }
 
 const INITIAL_PROFILE: UserProfile = {
   name: 'Игрок',
-  avatar: 'default',
   level: 1,
   xp: 0,
   totalXp: 0,
@@ -30,7 +28,6 @@ const INITIAL_PROFILE: UserProfile = {
   tasksCompleted: 0,
   totalPointsEarned: 0,
   currentSkin: 'default',
-  unlockedSkins: ['default'],
   streak: 1,
   maxStreak: 1,
   createdAt: Date.now(),
@@ -217,8 +214,10 @@ function appReducer(state: AppState, action: AppAction): AppState {
         state.profile.tasksCompleted + (delta > 0 ? 1 : -1)
       )
 
-      // Recompute level from lifetime XP, supporting multi-level jumps.
-      const { level: newLevel, xp: newXp } = calculateLevel(newTotalXp, state.profile.daysInGame)
+      // Recompute level from lifetime XP, but never drop the player's level.
+      const { level: computedLevel, xp: newXp } = calculateLevel(newTotalXp, state.profile.daysInGame)
+      const newLevel = Math.max(state.profile.level, computedLevel)
+      const newTotalEarned = state.profile.totalPointsEarned + (delta > 0 ? delta : 0)
       const streak = computeStreak(collectCompletedDates(newTasks))
       const newMaxStreak = Math.max(state.profile.maxStreak, streak)
 
@@ -249,7 +248,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
           xp: newXp,
           totalXp: newTotalXp,
           tasksCompleted: newTasksCompleted,
-          totalPointsEarned: newTotalXp,
+          totalPointsEarned: newTotalEarned,
           level: newLevel,
           streak,
           maxStreak: newMaxStreak,
@@ -364,10 +363,9 @@ function buildTasksIndex(tasks: Task[]): TasksIndex {
 interface AppContextType {
   state: AppState
   dispatch: Dispatch<AppAction>
-  addTask: (task: Omit<Task, 'id' | 'createdAt'>) => void
+  addTask: (task: Omit<Task, 'id' | 'createdAt'>) => string
   getTasksForDate: (date: string) => Task[]
-  getLevelProgress: () => { current: number; required: number; percent: number; canLevelUp: boolean; nextLevel: number }
-  checkAchievements: () => void
+  getLevelProgress: () => { current: number; required: number; percent: number; canLevelUp: boolean; nextLevel: number; nextDaysRequired: number }
 }
 
 const AppContext = createContext<AppContextType | null>(null)
@@ -398,8 +396,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const indexRef = useRef<TasksIndex>({ getForDate: () => [] })
   useEffect(() => { indexRef.current = buildTasksIndex(state.tasks) }, [state.tasks])
 
-  const addTask = useCallback((task: Omit<Task, 'id' | 'createdAt'>) => {
-    dispatch({ type: 'ADD_TASK', payload: { ...task, id: validateUUID(), createdAt: Date.now() } })
+  const addTask = useCallback((task: Omit<Task, 'id' | 'createdAt'>): string => {
+    const id = validateUUID()
+    dispatch({ type: 'ADD_TASK', payload: { ...task, id, createdAt: Date.now() } })
+    return id
   }, [])
 
   const getTasksForDate = useCallback((date: string): Task[] => {
@@ -408,7 +408,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const getLevelProgress = useCallback(() => {
     const nextLevel = LEVELS.find(l => l.level === state.profile.level + 1)
-    if (!nextLevel) return { current: state.profile.xp, required: 0, percent: 100, canLevelUp: false, nextLevel: state.profile.level }
+    if (!nextLevel) return { current: state.profile.xp, required: 0, percent: 100, canLevelUp: false, nextLevel: state.profile.level, nextDaysRequired: 0 }
     const canLevelUp =
       state.profile.xp >= nextLevel.xpRequired &&
       state.profile.daysInGame >= nextLevel.daysRequired
@@ -418,11 +418,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       percent: Math.min(100, (state.profile.xp / nextLevel.xpRequired) * 100),
       canLevelUp,
       nextLevel: nextLevel.level,
+      nextDaysRequired: nextLevel.daysRequired,
     }
-  }, [state.profile])
-
-  const checkAchievements = useCallback(() => {
-    computeUnlockedAchievements(state.profile).forEach(id => dispatch({ type: 'UNLOCK_ACHIEVEMENT', payload: id }))
   }, [state.profile])
 
   useEffect(() => {
@@ -471,8 +468,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(id)
   }, [state.settings.notifications.enabled, state.settings.notifications.time, state.tasks.length])
 
+  const prevLevelRef = useRef(state.profile.level)
+  const prevAchievementsRef = useRef(new Set(state.achievements.filter(a => a.unlocked).map(a => a.id)))
+  const prevSkinsRef = useRef(new Set(state.skins.filter(s => s.unlocked).map(s => s.id)))
+
+  const { showToast } = useToast()
+
+  useEffect(() => {
+    if (state.profile.level > prevLevelRef.current) {
+      showToast(`Уровень ${state.profile.level}!`, 'success')
+    }
+    prevLevelRef.current = state.profile.level
+
+    const unlockedAch = new Set(state.achievements.filter(a => a.unlocked).map(a => a.id))
+    unlockedAch.forEach(id => {
+      if (prevAchievementsRef.current.has(id)) return
+      const a = state.achievements.find(x => x.id === id)
+      if (a) showToast(`Достижение: ${a.name}!`, 'success')
+    })
+    prevAchievementsRef.current = unlockedAch
+
+    const unlockedSkins = new Set(state.skins.filter(s => s.unlocked).map(s => s.id))
+    unlockedSkins.forEach(id => {
+      if (prevSkinsRef.current.has(id)) return
+      const s = state.skins.find(x => x.id === id)
+      if (s) showToast(`Новый персонаж: ${s.name}!`, 'success')
+    })
+    prevSkinsRef.current = unlockedSkins
+  }, [state.profile.level, state.achievements, state.skins, showToast])
+
   return (
-    <AppContext.Provider value={{ state, dispatch, addTask, getTasksForDate, getLevelProgress, checkAchievements }}>
+    <AppContext.Provider value={{ state, dispatch, addTask, getTasksForDate, getLevelProgress }}>
       {children}
     </AppContext.Provider>
   )

@@ -5,6 +5,7 @@ import { TabBar } from '../components/TabBar'
 import { PageHeader } from '../components/PageHeader'
 import { useApp } from '../context/AppContext'
 import { ROUTES } from '../constants/routes'
+import { LEVELS } from '../constants/levels'
 import { CHARACTER_MAP } from '../components/CharacterSVG'
 
 export function MainScreen() {
@@ -14,6 +15,11 @@ export function MainScreen() {
   const currentSkin = skins.find(s => s.id === selectedSkinId)
   const CharComponent = currentSkin ? CHARACTER_MAP[currentSkin.preview] : undefined
   const progress = getLevelProgress()
+  const maxLevel = LEVELS[LEVELS.length - 1].level
+  const isMax = profile.level >= maxLevel
+  const waitingDays = !progress.canLevelUp && progress.percent >= 100 && !isMax
+    ? Math.max(0, progress.nextDaysRequired - profile.daysInGame)
+    : null
 
   return (
     <div className="page">
@@ -48,7 +54,7 @@ export function MainScreen() {
             <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.3px', marginTop: 2 }}>Уровень</div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '22px', fontWeight: 600, color: 'var(--color-text)' }}>{profile.level >= 20 ? 'МАКС' : `${progress.current} / ${progress.required || '-'}`}</div>
+            <div style={{ fontSize: '22px', fontWeight: 600, color: 'var(--color-text)' }}>{isMax ? 'МАКС' : `${progress.current} / ${progress.required || '-'}`}</div>
             <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.3px', marginTop: 2 }}>XP</div>
           </div>
           <div style={{ textAlign: 'center' }}>
@@ -56,6 +62,12 @@ export function MainScreen() {
             <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.3px', marginTop: 2 }}>Дней</div>
           </div>
         </div>
+
+        {waitingDays !== null && (
+          <p style={{ marginTop: 10, fontSize: '12px', color: 'var(--color-warning)', textAlign: 'center' }}>
+            XP хватает — до {progress.nextLevel} уровня ещё {waitingDays} {pluralDays(waitingDays)}
+          </p>
+        )}
 
         <Button variant="secondary" size="sm" onClick={() => navigate(ROUTES.CHARACTER)} style={{ marginTop: 20 }}>
           Сменить
@@ -71,4 +83,12 @@ export function MainScreen() {
       <TabBar />
     </div>
   )
+}
+
+function pluralDays(n: number): string {
+  const mod10 = n % 10
+  const mod100 = n % 100
+  if (mod10 === 1 && mod100 !== 11) return 'день'
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'дня'
+  return 'дней'
 }

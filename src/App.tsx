@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from './context/ThemeContext'
 import { AppProvider } from './context/AppContext'
+import { ToastProvider } from './context/ToastContext'
 import { DrawerProvider } from './components/Drawer'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ROUTES } from './constants/routes'
@@ -23,26 +24,28 @@ function Loading() {
 function App() {
   return (
     <ThemeProvider>
-      <AppProvider>
-        <DrawerProvider>
-          <ErrorBoundary>
-            <Suspense fallback={<Loading />}>
-              <Routes>
-                <Route path={ROUTES.HOME} element={<MainScreen />} />
-                <Route path={ROUTES.TASKS} element={<TasksScreen />} />
-                <Route path={ROUTES.AI} element={<AIScreen />} />
-                <Route path={ROUTES.PROFILE} element={<ProfileScreen />} />
-                <Route path={ROUTES.STATS} element={<StatsScreen />} />
-                <Route path={ROUTES.SETTINGS} element={<SettingsScreen />} />
-                <Route path={ROUTES.CHARACTER} element={<CharacterScreen />} />
-                <Route path={ROUTES.EVOLUTION} element={<EvolutionScreen />} />
-                <Route path={ROUTES.ACHIEVEMENTS} element={<AchievementsScreen />} />
-                <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
-              </Routes>
-            </Suspense>
-          </ErrorBoundary>
-        </DrawerProvider>
-      </AppProvider>
+      <ToastProvider>
+        <AppProvider>
+          <DrawerProvider>
+            <ErrorBoundary>
+              <Suspense fallback={<Loading />}>
+                <Routes>
+                  <Route path={ROUTES.HOME} element={<MainScreen />} />
+                  <Route path={ROUTES.TASKS} element={<TasksScreen />} />
+                  <Route path={ROUTES.AI} element={<AIScreen />} />
+                  <Route path={ROUTES.PROFILE} element={<ProfileScreen />} />
+                  <Route path={ROUTES.STATS} element={<StatsScreen />} />
+                  <Route path={ROUTES.SETTINGS} element={<SettingsScreen />} />
+                  <Route path={ROUTES.CHARACTER} element={<CharacterScreen />} />
+                  <Route path={ROUTES.EVOLUTION} element={<EvolutionScreen />} />
+                  <Route path={ROUTES.ACHIEVEMENTS} element={<AchievementsScreen />} />
+                  <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
+                </Routes>
+              </Suspense>
+            </ErrorBoundary>
+          </DrawerProvider>
+        </AppProvider>
+      </ToastProvider>
     </ThemeProvider>
   )
 }

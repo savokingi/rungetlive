@@ -69,7 +69,7 @@ export function AchievementsScreen() {
                     display: 'flex', alignItems: 'center', gap: 12, padding: '12px',
                     borderRadius: 'var(--radius-sm)', border: '0.5px solid var(--color-border)',
                     background: achievement.unlocked ? 'var(--color-surface)' : 'var(--color-bg)',
-                    cursor: achievement.unlocked ? 'pointer' : 'not-allowed',
+                    cursor: achievement.unlocked ? 'default' : 'not-allowed',
                     opacity: achievement.unlocked ? 1 : 0.4, textAlign: 'left', width: '100%',
                   }} aria-disabled={!achievement.unlocked}
                 >

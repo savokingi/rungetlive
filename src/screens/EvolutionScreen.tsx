@@ -3,6 +3,7 @@ import { Card } from '../components/Card'
 import { TabBar } from '../components/TabBar'
 import { PageHeader } from '../components/PageHeader'
 import { useApp } from '../context/AppContext'
+import { LEVELS } from '../constants/levels'
 import { CHARACTER_MAP } from '../components/CharacterSVG'
 
 const ADAM_TIERS = [
@@ -15,6 +16,11 @@ export function EvolutionScreen() {
   const levelSkins = skins
     .filter(s => typeof s.unlockLevel === 'number')
     .sort((a, b) => (a.unlockLevel as number) - (b.unlockLevel as number))
+
+  const selectedIsLevel = levelSkins.some(s => s.id === selectedSkinId)
+  const currentTier = selectedIsLevel
+    ? levelSkins.find(s => s.id === selectedSkinId)
+    : levelSkins.filter(s => s.unlocked).sort((a, b) => (b.unlockLevel as number) - (a.unlockLevel as number))[0]
 
   return (
     <div className="page">
@@ -54,6 +60,8 @@ export function EvolutionScreen() {
               {levelSkins.map((skin, i) => {
                 const unlocked = skin.unlocked
                 const current = selectedSkinId === skin.id
+                const isCurrentTier = !selectedIsLevel && currentTier?.id === skin.id
+                const daysForLevel = LEVELS.find(l => l.level === skin.unlockLevel)?.daysRequired ?? 0
                 const Char = skin.preview ? CHARACTER_MAP[skin.preview] : undefined
                 return (
                   <button
@@ -63,8 +71,8 @@ export function EvolutionScreen() {
                     style={{
                       display: 'flex', alignItems: 'center', gap: 14, padding: '10px 12px', width: '100%',
                       borderRadius: 'var(--radius-sm)', textAlign: 'left',
-                      border: `1px solid ${current ? 'var(--color-accent)' : 'var(--color-border)'}`,
-                      background: current ? 'var(--color-accent-light)' : 'var(--color-surface)',
+                      border: `1px solid ${current || isCurrentTier ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                      background: current || isCurrentTier ? 'var(--color-accent-light)' : 'var(--color-surface)',
                       opacity: unlocked ? 1 : 0.5, cursor: unlocked ? 'pointer' : 'default',
                       transition: 'var(--transition)',
                     }}
@@ -86,7 +94,7 @@ export function EvolutionScreen() {
                       <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
                         <Zap size={12} style={{ color: 'var(--color-accent)' }} />
                         <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>
-                          {unlocked ? `Ур. ${skin.unlockLevel}` : `Разблокируется. ур. ${skin.unlockLevel}`}
+                          {unlocked ? `Ур. ${skin.unlockLevel}` : `Разблокируется: ур. ${skin.unlockLevel} · ${daysForLevel} дн.`}
                         </span>
                       </div>
                     </div>
@@ -94,6 +102,10 @@ export function EvolutionScreen() {
                       {current ? (
                         <span style={{ fontSize: 11, color: 'var(--color-accent)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
                           <Check size={13} /> Текущий
+                        </span>
+                      ) : isCurrentTier ? (
+                        <span style={{ fontSize: 11, color: 'var(--color-accent)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
+                          <Check size={13} /> Ваш тир
                         </span>
                       ) : unlocked ? (
                         <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Активен</span>

@@ -14,7 +14,7 @@ export function PageHeader({ title, showBack = true, onBack, rightAction }: Page
   const navigate = useNavigate()
   const { open: openDrawer } = useDrawer()
 
-  const canGoBack = window.history.length > 1 && showBack
+  const canGoBack = showBack && (window.history.state?.idx ?? 0) > 0
   const usesBack = onBack || canGoBack
 
   const handleClick = onBack
@@ -42,7 +42,7 @@ export function PageHeader({ title, showBack = true, onBack, rightAction }: Page
         }}
         aria-label={usesBack ? 'Назад' : 'Меню'}
       >
-        {showBack ? <ChevronLeft size={22} strokeWidth={2.5} /> : <Menu size={22} strokeWidth={2.5} />}
+        {canGoBack ? <ChevronLeft size={22} strokeWidth={2.5} /> : <Menu size={22} strokeWidth={2.5} />}
       </button>
       <h1 style={{
         flex: 1, textAlign: 'center', fontSize: '14px', fontWeight: 500,

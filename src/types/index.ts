@@ -28,7 +28,6 @@ export interface Task {
 
 export interface UserProfile {
   name: string
-  avatar: string
   level: number
   xp: number
   totalXp: number
@@ -36,7 +35,6 @@ export interface UserProfile {
   tasksCompleted: number
   totalPointsEarned: number
   currentSkin: string
-  unlockedSkins: string[]
   streak: number
   maxStreak: number
   createdAt: number
@@ -52,7 +50,6 @@ export interface Settings {
   theme: ThemeConfig
   ai: AIConfig
   notifications: { enabled: boolean; time: string }
-  language: 'ru' | 'en'
   sounds: boolean
 }
 

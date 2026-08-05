@@ -244,25 +244,6 @@ export function SettingsScreen() {
 
         <Card style={{ marginTop: 16 }}>
           <div style={{ padding: 16 }}>
-            <p style={{ fontSize: '11px', fontWeight: 500, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: 12 }}>Язык</p>
-            <div style={{ display: 'flex', gap: 10 }}>
-              {[{ value: 'ru', label: 'Русский' }, { value: 'en', label: 'English' }].map(opt => (
-                <button key={opt.value} onClick={() => setSetting({ language: opt.value as 'ru' | 'en' })} style={{
-                  flex: 1, padding: '12px', borderRadius: 'var(--radius)',
-                  border: `1px solid ${settings.language === opt.value ? 'var(--color-accent)' : 'var(--color-border)'}`,
-                  background: settings.language === opt.value ? 'var(--color-accent-light)' : 'var(--color-surface)',
-                  color: settings.language === opt.value ? 'var(--color-accent)' : 'var(--color-text)',
-                  fontSize: '13px', fontWeight: 500, cursor: 'pointer', transition: 'var(--transition)',
-                }}
-                  aria-pressed={settings.language === opt.value}
-                >{opt.label}</button>
-              ))}
-            </div>
-          </div>
-        </Card>
-
-        <Card style={{ marginTop: 16 }}>
-          <div style={{ padding: 16 }}>
             <p style={{ fontSize: '11px', fontWeight: 500, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: 12 }}>Другое</p>
             <SettingItem icon={<Music size={20} />} label="Звуки" trailing={<Switch checked={settings.sounds} onChange={v => setSetting({ sounds: v })} />} />
             <SettingItem icon={<Download size={20} />} label="Экспорт данных" trailing={

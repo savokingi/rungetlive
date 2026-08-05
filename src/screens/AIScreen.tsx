@@ -27,10 +27,11 @@ interface ParsedTask {
   date?: string
   confirmed: boolean
   editing: boolean
+  addedId?: string
 }
 
 export function AIScreen() {
-  const { addTask, state } = useApp()
+  const { addTask, state, dispatch } = useApp()
   const navigate = useNavigate()
 
   const aiDisabled = state.aiConfig.type === 'disabled'
@@ -85,7 +86,7 @@ export function AIScreen() {
     setMessages(prev => prev.map(m => {
       if (m.id !== msgId || !m.tasks) return m
       const task = m.tasks![taskIndex]
-      addTask({
+      const addedId = addTask({
         title: task.title,
         points: task.points,
         timeStart: task.timeStart || '09:00',
@@ -94,7 +95,16 @@ export function AIScreen() {
         repeat: { type: 'none', daysOfWeek: [], endDate: '' },
         completed: false,
       })
-      return { ...m, tasks: m.tasks!.map((t, i) => i === taskIndex ? { ...t, confirmed: true } : t) }
+      return { ...m, tasks: m.tasks!.map((t, i) => i === taskIndex ? { ...t, confirmed: true, addedId } : t) }
+    }))
+  }
+
+  const handleUndoTask = (msgId: string, taskIndex: number) => {
+    setMessages(prev => prev.map(m => {
+      if (m.id !== msgId || !m.tasks) return m
+      const task = m.tasks![taskIndex]
+      if (task.addedId) dispatch({ type: 'DELETE_TASK', payload: task.addedId })
+      return { ...m, tasks: m.tasks!.map((t, i) => i === taskIndex ? { ...t, confirmed: false, addedId: undefined } : t) }
     }))
   }
 
@@ -173,7 +183,10 @@ export function AIScreen() {
                           </div>
                         </div>
                         {task.confirmed ? (
-                          <span style={{ fontSize: '12px', color: 'var(--color-accent)', fontWeight: 600 }}>Добавлено</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: '12px', color: 'var(--color-accent)', fontWeight: 600 }}>Добавлено</span>
+                            <Button variant="ghost" size="sm" onClick={() => handleUndoTask(msg.id, i)}>Отменить</Button>
+                          </div>
                         ) : (
                           <div style={{ display: 'flex', gap: 8 }}>
                             <Button variant="secondary" size="sm" onClick={() => handleConfirmTask(msg.id, i)}>
@@ -209,6 +222,11 @@ export function AIScreen() {
         </div>
       ) : (
         <div style={{ padding: '16px', borderTop: '0.5px solid var(--color-border)', background: 'var(--color-surface)' }}>
+          {state.aiConfig.type === 'custom' && !state.aiConfig.customApiKey && (
+            <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: 10, textAlign: 'center' }}>
+              Сейчас отвечает локальный помощник. Добавь API-ключ Gemini в настройках, чтобы включить ИИ.
+            </p>
+          )}
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <div style={{ flex: 1 }}>
               <Input value={input}

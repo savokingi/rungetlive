@@ -10,6 +10,7 @@ import { useApp } from '../context/AppContext'
 import { Task, RepeatConfig } from '../types'
 import { TASK_TEMPLATES } from '../constants/taskTemplates'
 import { isCompletedOn, localDateKey } from '../utils/progression'
+import { playTaskSound } from '../utils/sound'
 
 export function TasksScreen() {
   const { state, getTasksForDate, addTask, dispatch } = useApp()
@@ -59,7 +60,12 @@ export function TasksScreen() {
     dispatch({ type: 'DELETE_TASK', payload: id })
     setConfirmDeleteId(null)
   }
-  const handleToggle = (id: string) => dispatch({ type: 'TOGGLE_TASK', payload: { id, date: selectedDate } })
+  const handleToggle = (id: string) => {
+    const t = state.tasks.find(x => x.id === id)
+    const wasCompleted = t ? isCompletedOn(t, selectedDate) : false
+    dispatch({ type: 'TOGGLE_TASK', payload: { id, date: selectedDate } })
+    if (!wasCompleted && state.settings.sounds) playTaskSound()
+  }
   const handleRename = (id: string, title: string) => {
     const t = state.tasks.find(x => x.id === id)
     if (t) dispatch({ type: 'UPDATE_TASK', payload: { ...t, title } })
@@ -105,6 +111,20 @@ export function TasksScreen() {
             </button>
           )
         })}
+        {selectedDate !== localDateKey(today) && (
+          <button
+            onClick={() => dispatch({ type: 'SET_SELECTED_DATE', payload: localDateKey(today) })}
+            style={{
+              height: 48, borderRadius: 'var(--radius)', flexShrink: 0, cursor: 'pointer',
+              padding: '0 14px', border: '1px dashed var(--color-accent)',
+              background: 'var(--color-accent-light)', color: 'var(--color-accent)',
+              fontSize: '13px', fontWeight: 500,
+            }}
+            aria-label="Вернуться к сегодня"
+          >
+            Сегодня
+          </button>
+        )}
       </div>
 
       <main style={{ flex: 1, padding: '16px', overflow: 'auto' }} aria-live="polite">

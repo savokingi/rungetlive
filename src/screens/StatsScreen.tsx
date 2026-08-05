@@ -4,6 +4,7 @@ import { Card } from '../components/Card'
 import { TabBar } from '../components/TabBar'
 import { PageHeader } from '../components/PageHeader'
 import { useApp } from '../context/AppContext'
+import { LEVELS } from '../constants/levels'
 import { localDateKey } from '../utils/progression'
 import type { Task } from '../types'
 
@@ -226,7 +227,7 @@ export function StatsScreen() {
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text)' }}>Уровень {profile.level}</div>
                 <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', marginTop: 2 }}>
-                  {profile.totalXp} всего XP · {profile.level >= 20 ? 'Максимальный уровень' : `Текущий XP: ${profile.xp}`}
+                  {profile.totalXp} всего XP · {profile.level >= LEVELS[LEVELS.length - 1].level ? 'Максимальный уровень' : `Текущий XP: ${profile.xp}`}
                 </div>
               </div>
             </div>
